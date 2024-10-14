@@ -44,14 +44,21 @@ LY = 5.425/100
 #R: the radius of wheels
 R = 3/100
 
+
+##Below need to be tuned
+#Q_SCALE: scale factor for q
+Q_SCALE = 1
+
 #Q_DEFAULT: default range of q [-50,50]
-Q_DEFAULT = (-50,50)
+Q_DEFAULT = (-50*Q_SCALE,50*Q_SCALE)
 
 #Q_BRAEK: the range of q for each wheel where w=0
-Q_BREAK = [(), (), (), ()]
+Q_BREAK = [(-32*Q_SCALE,32*Q_SCALE), (-31*Q_SCALE,31*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
 
 #W_DEFAUlT: default range of w [min, max] for each wheel
 W_DEFAULT = [(), (), (), ()]
+
+
 
 class MegaPiController:
     def __init__(self, port='/dev/ttyUSB0', verbose=True):
@@ -81,6 +88,7 @@ class MegaPiController:
         self.qdef = Q_DEFAULT
         self.qbrk = Q_BREAK
         self.wdef = W_DEFAULT
+        self.qscale = Q_SCALE
 
 
     
@@ -259,10 +267,10 @@ class MegaPiController:
                   " vfr: " + repr(int(round(vfr,0))) +
                   " vbl: " + repr(int(round(vbl,0))) +
                   " vbr: " + repr(int(round(vbr,0))))
-        self.bot.motorRun(self.mfl,-vfl)
-        self.bot.motorRun(self.mfr,vfr)
-        self.bot.motorRun(self.mbl,-vbl)
-        self.bot.motorRun(self.mbr,vbr)
+        self.bot.motorRun(self.mfl,-int(round(vfl,0)))
+        self.bot.motorRun(self.mfr,int(round(vfr,0)))
+        self.bot.motorRun(self.mbl,-int(round(vbl,0)))
+        self.bot.motorRun(self.mbr,int(round(vbr,0)))
 
     # The actual motor signal need to be tuned as well.
     # The motor signal can be larger than 50, but you may not want to go too large (e.g. 100 or -100)
@@ -275,7 +283,7 @@ class MegaPiController:
     def carStraight(self, speed):
         if self.verbose:
             print("CAR STRAIGHT:")
-        self.setFourMotors(-speed, speed, -speed, speed)
+        self.setFourMotors(speed, speed, speed, speed)
 
 
     def carRotate(self, speed):
@@ -309,7 +317,7 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(60)
+    mpi_ctrl.carStraight(1.5*30)
     time.sleep(4)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
