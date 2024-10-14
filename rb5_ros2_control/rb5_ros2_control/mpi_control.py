@@ -22,6 +22,10 @@ PFR = 1 #index for motor front right
 PBL = 2 #index for motor back left
 PBR = 3 #index for motor back right
 
+PVX = 0 #index for vx
+PVY = 0 #index for vy
+PWZ = 0 #index for wz
+
 #Alpha: angle between robot center and wheel center
 ALPHA = [math.pi/4 , -(math.pi/4), (3*math.pi)/4, -(3*math.pi)/4]
 
@@ -40,6 +44,14 @@ LY = 5.425/100
 #R: the radius of wheels
 R = 3/100
 
+#Q_DEFAULT: default range of q [-50,50]
+Q_DEFAULT = (-50,50)
+
+#Q_BRAEK: the range of q for each wheel where w=0
+Q_BREAK = [(), (), (), ()]
+
+#W_DEFAUlT: default range of w [min, max] for each wheel
+W_DEFAULT = [(), (), (), ()]
 
 class MegaPiController:
     def __init__(self, port='/dev/ttyUSB0', verbose=True):
@@ -57,12 +69,18 @@ class MegaPiController:
         self.pfr = PFR
         self.pbl = PBL
         self.pbr = PBR
+        self.pvx = PVX
+        self.pvy = PVY
+        self.pwz = PWZ
         self.alpha = ALPHA
         self.beta = BETA
         self.gamma = GAMMA
         self.lx = LX
         self.ly = LY
         self.r = R
+        self.qdef = Q_DEFAULT
+        self.qbrk = Q_BREAK
+        self.wdef = W_DEFAULT
 
 
     
@@ -95,9 +113,9 @@ class MegaPiController:
         else:
             raise AssertionError(f"Array shape must be (1, 3) or (3, 1)")
         #Get vx,vy,wz
-        vx = vr[0]
-        vy = vr[1]
-        wz = vr[2]
+        vx = vr[self.pvx]
+        vy = vr[self.pvy]
+        wz = vr[self.pwz]
         #Get parameter
         r = self.r
         lx = self.lx
@@ -129,10 +147,10 @@ class MegaPiController:
         else:
             raise AssertionError(f"Array shape must be (1, 4) or (4, 1)")
         #Get w0,w1,w2,w3
-        w0 = w[0]
-        w1 = w[1]
-        w2 = w[2]
-        w3 = w[3]
+        w0 = w[self.pfl]
+        w1 = w[self.pfr]
+        w2 = w[self.pbl]
+        w3 = w[self.pbr]
         #Get parameter
         r = self.r
         lx = self.lx
@@ -145,6 +163,95 @@ class MegaPiController:
         vr = np.sqrt(vx**2 + vy**2)
         theta_r = math.atan2(vy,vx)
         return np.array([vx,vy,wz,vr,theta_r])
+    
+    def linearApproximation(self, ymax, ymin, xmax, xmin, x):
+        """
+        Use Linear Approximation to map the angular velocity of wheel into
+        control input of q or other way arround
+
+        Param:
+            ymax: maximun value of y
+            ymin: minimum value of y
+            xmax: maximum value of x
+            xmin: minimum value of x
+            x: value of x
+        
+        Return:
+            mapped y value
+        """
+        m = (ymax - ymin) / (xmax - xmin)
+        b = ymin - m * xmin
+        y = m * x + b
+        y = np.clip(y, ymin, ymax)
+        return int(round(y,0))
+    
+    def mapControlInput(self,input, task_type):
+        """
+        Map q into w for each wheel or w into q
+
+        Param:
+            input: input vector, either q or w
+            task_type: [0,1] 0 for w to q, 1 for q to w
+
+        Return
+            converted q or w
+        """
+        #Get qmax, qmin, wmax, wmin for each wheel
+        w0_def = self.wdef[self.pfl]
+        w1_def = self.wdef[self.pfr]
+        w2_def = self.wdef[self.pbl]
+        w3_def = self.wdef[self.pbr]
+
+        q_def = self.qdef
+        q0_brk = self.qbrk[self.pfl]
+        q1_brk = self.qbrk[self.pfr]
+        q2_brk = self.qbrk[self.pbl]
+        q3_brk = self.qbrk[self.pbr]
+
+        # Map w to q
+        if(task_type == 0):
+            #Get w
+            w0 = input[self.pfl]
+            w1 = input[self.pfr]
+            w2 = input[self.pbl]
+            w3 = input[self.pbr]
+            #Calculate q
+            q0 = self.linearApproximation(q_def[1], q_def[0], w0_def[1], w0_def[0], w0)
+            if q0 in range(q0_brk[0], q0_brk[1]): q0 = 0
+            q1 = self.linearApproximation(q_def[1], q_def[0], w1_def[1], w1_def[0], w1)
+            if q1 in range(q1_brk[0], q1_brk[1]): q1 = 0
+            q2 = self.linearApproximation(q_def[1], q_def[0], w2_def[1], w2_def[0], w2)
+            if q2 in range(q2_brk[0], q2_brk[1]): q2 = 0
+            q3 = self.linearApproximation(q_def[1], q_def[0], w3_def[1], w3_def[0], w3)
+            if q3 in range(q3_brk[0], q3_brk[1]): q3 = 0
+            return np.array([q0,q1,q2,q3])
+        # Map q to w
+        elif(task_type == 1):
+            #Get q
+            q0 = input[self.pfl]
+            q1 = input[self.pfr]
+            q2 = input[self.pbl]
+            q3 = input[self.pbr]
+            #Calculate w
+            w0 = 0
+            w1 = 0
+            w2 = 0
+            w3 = 0
+            if q0 not in range(q0_brk[0], q0_brk[1]): 
+                w0 = self.linearApproximation(w0_def[1], w0_def[0], q_def[1], q_def[0], q0)
+            if q1 not in range(q1_brk[0], q1_brk[1]): 
+                w1 = self.linearApproximation(w1_def[1], w1_def[0], q_def[1], q_def[0], q1)
+            if q2 not in range(q2_brk[0], q2_brk[1]): 
+                w2 = self.linearApproximation(w2_def[1], w2_def[0], q_def[1], q_def[0], q2)
+            if q3 not in range(q3_brk[0], q3_brk[1]): 
+                w3 = self.linearApproximation(w3_def[1], w3_def[0], q_def[1], q_def[0], q3)
+            return np.array([w0,w1,w2,w3])
+
+
+            
+
+
+
     
     def setFourMotors(self, vfl=0, vfr=0, vbl=0, vbr=0):
         if self.verbose:
@@ -202,7 +309,7 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(30)
+    mpi_ctrl.carStraight(60)
     time.sleep(4)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
