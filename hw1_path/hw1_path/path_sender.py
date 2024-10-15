@@ -64,14 +64,23 @@ class KeyJoyNode(Node):
         # Target position in world frame
         x_w, y_w, theta_w = target[0], target[1], target[2]
 
-        # Step 1: Convert the target from world frame to robot frame
+        # Convert the target from world frame to robot frame
         dx = (x_w - x_r) * np.cos(theta_r) + (y_w - y_r) * np.sin(theta_r)
         dy = -(x_w - x_r) * np.sin(theta_r) + (y_w - y_r) * np.cos(theta_r)
 
         p = np.sqrt(dx**2 + dy**2)
-        p_theta = math.atan2(dy,dx)
-        a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
+        #p_theta = math.atan2(dy,dx)
+        #p_theta = math.atan2(dy,dx)
+        #a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
+        a = math.atan2(dy,dx)
+        a = (a + np.pi) % (2 * np.pi) - np.pi
         b = np.arctan2(np.sin(theta_w - theta_r - a), np.cos(theta_w - theta_r - a))
+
+        # Decide whether to move forward or backward
+        if abs(a) == np.pi:
+            a = 0
+            b = 0
+            p = -p
 
         v = self.kp * p
         gamma = self.ka * a + self.kb * b
