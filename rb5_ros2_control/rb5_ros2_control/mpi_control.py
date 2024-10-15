@@ -59,6 +59,8 @@ Q_BREAK = [(-32*Q_SCALE,32*Q_SCALE), (-31*Q_SCALE,31*Q_SCALE), (-26*Q_SCALE,26*Q
 W_MAX = math.pi/2
 W_MIN = -math.pi/2
 W_DEFAULT = [(W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX)]
+Q1_ROTATION = [(-42,-150), (42.55,145)]
+Q1_ROTATION = [(-36,-142), (35.5,142)]
 
 
 
@@ -192,6 +194,7 @@ class MegaPiController:
         m = (ymax - ymin) / (xmax - xmin)
         b = ymin - m * xmin
         y = m * x + b
+        print(f'linear: {y}')
         y = np.clip(y, ymin, ymax)
         return int(round(y,0))
     
@@ -276,10 +279,10 @@ class MegaPiController:
                   " vfr: " + repr(int(round(vfr,0))) +
                   " vbl: " + repr(int(round(vbl,0))) +
                   " vbr: " + repr(int(round(vbr,0))))
-        self.bot.motorRun(self.mfl,-int(round(vfl,0)))
+        #self.bot.motorRun(self.mfl,-int(round(vfl,0)))
         self.bot.motorRun(self.mfr,int(round(vfr,0)))
-        self.bot.motorRun(self.mbl,-int(round(vbl,0)))
-        self.bot.motorRun(self.mbr,int(round(vbr,0)))
+        #self.bot.motorRun(self.mbl,-int(round(vbl,0)))
+        #self.bot.motorRun(self.mbr,int(round(vbr,0)))
 
     # The actual motor signal need to be tuned as well.
     # The motor signal can be larger than 50, but you may not want to go too large (e.g. 100 or -100)
@@ -355,9 +358,9 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    #mpi_ctrl.carStraight(1.5*30)
-    mpi_ctrl.forwardMotion(np.array([[1,0,0]]))
-    time.sleep(1)
+    mpi_ctrl.carStraight(-31)
+    #mpi_ctrl.forwardMotion(np.array([[-2,0,0]]))
+    time.sleep(60)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
     #mpi_ctrl.carRotate(30)
