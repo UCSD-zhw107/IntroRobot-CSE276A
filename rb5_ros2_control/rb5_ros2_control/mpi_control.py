@@ -50,17 +50,17 @@ R = 3/100
 Q_SCALE = 1
 
 #Q_DEFAULT: default range of q [-50,50]
-Q_DEFAULT = (-50*Q_SCALE,50*Q_SCALE)
+Q_DEFAULT = (-100*Q_SCALE,100*Q_SCALE)
 
 #Q_BRAEK: the range of q for each wheel where w=0
-Q_BREAK = [(-32*Q_SCALE,32*Q_SCALE), (-31*Q_SCALE,31*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
+Q_BREAK = [(-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
 
 #W_DEFAUlT: default range of w [min, max] for each wheel
-W_MAX = math.pi/2
-W_MIN = -math.pi/2
-W_DEFAULT = [(W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX)]
-Q1_ROTATION = [(-42,-150), (42.55,145)]
-Q1_ROTATION = [(-36,-142), (35.5,142)]
+Q0_ROTATION = [(-35,-153), (34.5,152.3)]
+Q1_ROTATION = [(-32.9,-142), (32.7,142)]
+Q2_ROTATION = [(-34.4,-151.5), (34.7,152)]
+Q3_ROTATION = [(-34.2,-154), (34.5,154.5)]
+
 
 
 
@@ -91,8 +91,11 @@ class MegaPiController:
         self.r = R
         self.qdef = Q_DEFAULT
         self.qbrk = Q_BREAK
-        self.wdef = W_DEFAULT
         self.qscale = Q_SCALE
+        self.q0rot = Q0_ROTATION
+        self.q1rot = Q1_ROTATION
+        self.q2rot = Q2_ROTATION
+        self.q3rot = Q3_ROTATION
 
 
     
@@ -175,30 +178,63 @@ class MegaPiController:
         vr = np.sqrt(vx**2 + vy**2)
         theta_r = math.atan2(vy,vx)
         return np.array([vx,vy,wz,vr,theta_r])
+
+    def rotationToW(rotation):
+        """
+        Convert rotation / minutes to rad/s
+
+        Param:
+            rotation:rotation/minutes
+        
+        Return:
+            rad/s
+        """
+        w1 = (rotation[0] * math.pi * 2) / 60
+        w2 = (rotation[1] * math.pi * 2) / 60
+        return w1, w2
     
-    def linearApproximation(self, ymax, ymin, xmax, xmin, x):
+    def linearApproximation(self, neg_par, pos_pair, deadzone,w):
         """
         Use Linear Approximation to map the angular velocity of wheel into
         control input of q or other way arround
 
         Param:
-            ymax: maximun value of y
-            ymin: minimum value of y
-            xmax: maximum value of x
-            xmin: minimum value of x
-            x: value of x
+            neg_pair: pair of (q,w) for negative q
+            pos_pair: pair of (q,w) for positive q
+            deadzone: deadzone of q
+            w: value of w
         
         Return:
-            mapped y value
+            mapped q value
         """
-        m = (ymax - ymin) / (xmax - xmin)
-        b = ymin - m * xmin
-        y = m * x + b
-        print(f'linear: {y}')
-        y = np.clip(y, ymin, ymax)
-        return int(round(y,0))
+        deadzone_neg = deadzone[0]-1
+        deadzone_pos = deadzone[1]-1
+
+        q_neg_high = neg_par[1][0]
+        q_neg_low = neg_par[0][0]
+        q_pos_high = pos_pair[1][0]
+        q_pos_low = pos_pair[0][0]
+
+        w_neg_high = neg_par[1][1]
+        w_neg_low = neg_par[0][1]
+        w_pos_high = pos_pair[1][1]
+        w_pos_low = pos_pair[0][1]
+
+        k_pos = (w_pos_high - w_pos_low) / ((q_pos_high - deadzone_pos) - (q_pos_low - deadzone_pos))
+        k_neg = (w_neg_high - w_neg_low) / ((q_neg_high + deadzone_neg) - (q_neg_low + deadzone_neg))
+
+        q = 0
+        if(w > 0):
+            q = (w / k_pos) + deadzone_pos
+        elif(w < 0):
+            q = (w / k_neg) + deadzone_neg
+
+        if q in range(deadzone_neg, deadzone_pos):
+            q = 0
+        
+        return int(round(q,0))
     
-    def mapControlInput(self,input, task_type):
+    def mapControlInput(self,input):
         """
         Map q into w for each wheel or w into q
 
@@ -209,56 +245,75 @@ class MegaPiController:
         Return
             converted q or w
         """
-        #Get qmax, qmin, wmax, wmin for each wheel
-        w0_def = self.wdef[self.pfl]
-        w1_def = self.wdef[self.pfr]
-        w2_def = self.wdef[self.pbl]
-        w3_def = self.wdef[self.pbr]
-
+        # Range
         q_def = self.qdef
-        q0_brk = self.qbrk[self.pfl]
-        q1_brk = self.qbrk[self.pfr]
-        q2_brk = self.qbrk[self.pbl]
-        q3_brk = self.qbrk[self.pbr]
 
-        # Map w to q
-        if(task_type == 0):
-            #Get w
-            w0 = input[self.pfl]
-            w1 = input[self.pfr]
-            w2 = input[self.pbl]
-            w3 = input[self.pbr]
-            #Calculate q
-            q0 = self.linearApproximation(q_def[1], q_def[0], w0_def[1], w0_def[0], w0)
-            if q0 in range(q0_brk[0], q0_brk[1]): q0 = 0
-            q1 = self.linearApproximation(q_def[1], q_def[0], w1_def[1], w1_def[0], w1)
-            if q1 in range(q1_brk[0], q1_brk[1]): q1 = 0
-            q2 = self.linearApproximation(q_def[1], q_def[0], w2_def[1], w2_def[0], w2)
-            if q2 in range(q2_brk[0], q2_brk[1]): q2 = 0
-            q3 = self.linearApproximation(q_def[1], q_def[0], w3_def[1], w3_def[0], w3)
-            if q3 in range(q3_brk[0], q3_brk[1]): q3 = 0
-            return np.array([q0,q1,q2,q3])
-        # Map q to w
-        elif(task_type == 1):
-            #Get q
-            q0 = input[self.pfl]
-            q1 = input[self.pfr]
-            q2 = input[self.pbl]
-            q3 = input[self.pbr]
-            #Calculate w
-            w0 = 0
-            w1 = 0
-            w2 = 0
-            w3 = 0
-            if q0 not in range(q0_brk[0], q0_brk[1]): 
-                w0 = self.linearApproximation(w0_def[1], w0_def[0], q_def[1], q_def[0], q0)
-            if q1 not in range(q1_brk[0], q1_brk[1]): 
-                w1 = self.linearApproximation(w1_def[1], w1_def[0], q_def[1], q_def[0], q1)
-            if q2 not in range(q2_brk[0], q2_brk[1]): 
-                w2 = self.linearApproximation(w2_def[1], w2_def[0], q_def[1], q_def[0], q2)
-            if q3 not in range(q3_brk[0], q3_brk[1]): 
-                w3 = self.linearApproximation(w3_def[1], w3_def[0], q_def[1], q_def[0], q3)
-            return np.array([w0,w1,w2,w3])
+        # Input w
+        w0 = input[self.pfl]
+        w1 = input[self.pfr]
+        w2 = input[self.pbl]
+        w3 = input[self.pbr]
+
+        q0 = 0
+        q1 = 0
+        q2 = 0
+        q3 = 0
+
+        ## Q0
+        if w0 != 0:
+            # Deadzone
+            q0_brk_low = self.qbrk[self.pfl][0]
+            q0_brk_high = self.qbrk[self.pfl][1]
+            # Rotation
+            q0_w_low_min, q0_w_low_max = self.rotationToW(self.q0rot[0])
+            q0_w_high_min, q0_w_high_max = self.rotationToW(self.q0rot[1])
+            # Build (q,w) pair
+            q0_neg_pair = [(q0_brk_low, q0_w_low_min),(q_def[0], q0_w_low_max)]
+            q0_pos_pair = [(q0_brk_high, q0_w_high_min),(q_def[1], q0_w_high_max)]
+            q0 = self.linearApproximation(q0_neg_pair,q0_pos_pair,self.qbrk[self.pfl],w0)
+        
+        ## Q1
+        if w1 != 0:
+            # Deadzone
+            q1_brk_low = self.qbrk[self.pfr][0]
+            q1_brk_high = self.qbrk[self.pfr][1]
+            # Rotation
+            q1_w_low_min, q1_w_low_max = self.rotationToW(self.q1rot[0])
+            q1_w_high_min, q1_w_high_max = self.rotationToW(self.q1rot[1])
+            # Build (q,w) pair
+            q1_neg_pair = [(q1_brk_low, q1_w_low_min),(q_def[0], q1_w_low_max)]
+            q1_pos_pair = [(q1_brk_high, q1_w_high_min),(q_def[1], q1_w_high_max)]
+            q1 = self.linearApproximation(q1_neg_pair,q1_pos_pair,self.qbrk[self.pfr],w1)
+        
+        ## Q2
+        if w2 != 0:
+            # Deadzone
+            q2_brk_low = self.qbrk[self.pbl][0]
+            q2_brk_high = self.qbrk[self.pbl][1]
+            # Rotation
+            q2_w_low_min, q2_w_low_max = self.rotationToW(self.q2rot[0])
+            q2_w_high_min, q2_w_high_max = self.rotationToW(self.q2rot[1])
+            # Build (q,w) pair
+            q2_neg_pair = [(q2_brk_low, q2_w_low_min),(q_def[0], q2_w_low_max)]
+            q2_pos_pair = [(q2_brk_high, q2_w_high_min),(q_def[1], q2_w_high_max)]
+            q2 = self.linearApproximation(q2_neg_pair,q2_pos_pair,self.qbrk[self.pbl],w2)
+
+        ## Q2
+        if w3 != 0:
+            # Deadzone
+            q3_brk_low = self.qbrk[self.pbr][0]
+            q3_brk_high = self.qbrk[self.pbr][1]
+            # Rotation
+            q3_w_low_min, q3_w_low_max = self.rotationToW(self.q3rot[0])
+            q3_w_high_min, q3_w_high_max = self.rotationToW(self.q3rot[1])
+            # Build (q,w) pair
+            q3_neg_pair = [(q3_brk_low, q3_w_low_min),(q_def[0], q3_w_low_max)]
+            q3_pos_pair = [(q3_brk_high, q3_w_high_min),(q_def[1], q3_w_high_max)]
+            q3 = self.linearApproximation(q3_neg_pair,q3_pos_pair,self.qbrk[self.pbr],w3)
+
+        return np.array([q0,q1,q2,q3])
+
+        
 
 
 
@@ -279,8 +334,8 @@ class MegaPiController:
                   " vfr: " + repr(int(round(vfr,0))) +
                   " vbl: " + repr(int(round(vbl,0))) +
                   " vbr: " + repr(int(round(vbr,0))))
-        #self.bot.motorRun(self.mfl,-int(round(vfl,0)))
-        self.bot.motorRun(self.mfr,int(round(vfr,0)))
+        self.bot.motorRun(self.mfl,-int(round(vfl,0)))
+        #self.bot.motorRun(self.mfr,int(round(vfr,0)))
         #self.bot.motorRun(self.mbl,-int(round(vbl,0)))
         #self.bot.motorRun(self.mbr,int(round(vbr,0)))
 
@@ -304,7 +359,7 @@ class MegaPiController:
         print(w)
 
         # Convert w to q
-        q = self.mapControlInput(w, 0)
+        q = self.mapControlInput(w)
 
         #Set Motor
         q0 = q[self.pfl]
@@ -358,8 +413,8 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(-31)
-    #mpi_ctrl.forwardMotion(np.array([[-2,0,0]]))
+    #mpi_ctrl.carStraight(27)
+    mpi_ctrl.forwardMotion(np.array([[-2,0,0]]))
     time.sleep(60)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
