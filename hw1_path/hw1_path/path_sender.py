@@ -20,6 +20,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import math
+import time
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
@@ -114,6 +115,7 @@ class KeyJoyNode(Node):
                 joy_msg.axes[2] = wz
                 joy_msg.axes[3] = t
                 joy_msg.axes[4] = 1
+                time.sleep(t)
             else:
                 joy_msg.axes[4] = 2
         elif key == 's':

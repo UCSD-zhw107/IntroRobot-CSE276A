@@ -336,9 +336,9 @@ class MegaPiController:
                   " vbl: " + repr(int(round(vbl,0))) +
                   " vbr: " + repr(int(round(vbr,0))))
         self.bot.motorRun(self.mfl,-int(round(vfl,0)))
-        #self.bot.motorRun(self.mfr,int(round(vfr,0)))
-        #self.bot.motorRun(self.mbl,-int(round(vbl,0)))
-        #self.bot.motorRun(self.mbr,int(round(vbr,0)))
+        self.bot.motorRun(self.mfr,int(round(vfr,0)))
+        self.bot.motorRun(self.mbl,-int(round(vbl,0)))
+        self.bot.motorRun(self.mbr,int(round(vbr,0)))
 
     # The actual motor signal need to be tuned as well.
     # The motor signal can be larger than 50, but you may not want to go too large (e.g. 100 or -100)
