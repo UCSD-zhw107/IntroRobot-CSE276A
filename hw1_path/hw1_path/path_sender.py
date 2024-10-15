@@ -28,22 +28,22 @@ from hw1_path.key_parser import get_key, save_terminal_settings, restore_termina
 import numpy as np
 
 # Gain
-KA = 1
-KP = 1
-KB = 1
+KA = 1.1
+KP = 1.0
+KB = -1.0
 
 class KeyJoyNode(Node):
     def __init__(self):
         super().__init__('key_joy_node')
         self.publisher_ = self.create_publisher(Joy, '/joy', 1)
         self.settings = save_terminal_settings()
-        self.waypoints = np.array([
+        self.waypoints = [
             [-1,0,0],
             [-1,1,1.57],
             [-2,1,0],
             [-2,2,-1.57],
             [0,0,0]   
-        ])
+        ]
         self.current_waypoint = [0,0,0]
         self.waypoints_ind = 0
         self.ka = KA
@@ -53,16 +53,25 @@ class KeyJoyNode(Node):
     def pathPlanning(self):
         # Current pose
         current_pose = self.current_waypoint
+        print(f'Current Post: {current_pose}')
         current_ind = self.waypoints_ind
         target = self.waypoints[current_ind]
+        print(f'Target Pose: {target}')
 
-        # Calcualte p, a, b
-        dx = target[0] - current_pose[0]
-        dy = target[1] - current_pose[1]
+        # Current robot position and orientation in world frame
+        x_r, y_r, theta_r = current_pose[0], current_pose[1], current_pose[2]
+
+        # Target position in world frame
+        x_w, y_w, theta_w = target[0], target[1], target[2]
+
+        # Step 1: Convert the target from world frame to robot frame
+        dx = (x_w - x_r) * np.cos(theta_r) + (y_w - y_r) * np.sin(theta_r)
+        dy = -(x_w - x_r) * np.sin(theta_r) + (y_w - y_r) * np.cos(theta_r)
+
         p = np.sqrt(dx**2 + dy**2)
         p_theta = math.atan2(dy,dx)
-        a = math.atan2(math.sin(p_theta-current_pose[2]),math.cos(p_theta-current_pose[2]))
-        b = math.atan2(math.sin(target[2]-current_pose[2]),math.cos(target[2]-current_pose[2]))
+        a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
+        b = np.arctan2(np.sin(theta_w - theta_r - a), np.cos(theta_w - theta_r - a))
 
         v = self.kp * p
         gamma = self.ka * a + self.kb * b
@@ -75,11 +84,37 @@ class KeyJoyNode(Node):
         vx = res[0]
         vy = res[1]
         wz = res[2]
+        print(f"vx: {vx}, vy: {vy}, wz: {wz}")
+
         v_total = np.sqrt(vx**2 + vy **2)
-        t_linear = p / v_total
-        t_angular = b / wz
+
+        if v_total == 0:
+            print("v_total is 0, cannot divide by 0")
+            t_linear = 0
+        else:
+            t_linear = abs(p) / abs(v_total)
+
+        print(f"v_total: {v_total}, t_linear: {t_linear}")
+
+        if wz == 0:
+            print("wz is 0, cannot divide by 0")
+            t_angular = 0
+        else:
+            t_angular = abs(b) / abs(wz)
+
+        print(f"t_angular: {t_angular}")
+
         t = max(t_linear, t_angular)
-        return [vx,vy,wz,t]
+        print(f"Time to reach the waypoint: {t}")
+
+        x_r += vx * t
+        y_r += vy * t
+        theta_r += wz * t
+        theta_r = (theta_r + np.pi) % (2 * np.pi) - np.pi
+        self.current_waypoint = [x_r, y_r, theta_r]
+
+
+        return [vx, vy, wz, t]
 
     def run(self):
         while True:
@@ -105,7 +140,6 @@ class KeyJoyNode(Node):
             if self.waypoints_ind != len(self.waypoints) - 1:
                 motion = self.pathPlanning()
                 self.waypoints_ind += 1
-                self.current_waypoint = self.waypoints[self.waypoints_ind]
                 vx = motion[0]
                 vy = motion[1]
                 wz = motion[2]
@@ -116,6 +150,7 @@ class KeyJoyNode(Node):
                 joy_msg.axes[3] = t
                 joy_msg.axes[4] = 1
                 time.sleep(t)
+                print("MOVE DONE")
             else:
                 joy_msg.axes[4] = 2
         elif key == 's':
