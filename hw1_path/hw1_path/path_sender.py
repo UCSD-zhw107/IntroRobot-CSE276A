@@ -39,9 +39,9 @@ class KeyJoyNode(Node):
         self.settings = save_terminal_settings()
         self.waypoints = np.array([
             [-1,0,0],
-            [-1,1,1.57]
+            [-1,1,1.57],
             [-2,1,0],
-            [-2,2,-1.57]
+            [-2,2,-1.57],
             [0,0,0]   
         ])
         self.current_waypoint = [0,0,0]
