@@ -23,8 +23,8 @@ PBL = 2 #index for motor back left
 PBR = 3 #index for motor back right
 
 PVX = 0 #index for vx
-PVY = 0 #index for vy
-PWZ = 0 #index for wz
+PVY = 1 #index for vy
+PWZ = 2 #index for wz
 
 #Alpha: angle between robot center and wheel center
 ALPHA = [math.pi/4 , -(math.pi/4), (3*math.pi)/4, -(3*math.pi)/4]
@@ -56,7 +56,9 @@ Q_DEFAULT = (-50*Q_SCALE,50*Q_SCALE)
 Q_BREAK = [(-32*Q_SCALE,32*Q_SCALE), (-31*Q_SCALE,31*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
 
 #W_DEFAUlT: default range of w [min, max] for each wheel
-W_DEFAULT = [(), (), (), ()]
+W_MAX = math.pi/2
+W_MIN = -math.pi/2
+W_DEFAULT = [(W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX), (W_MIN,W_MAX)]
 
 
 
@@ -256,6 +258,13 @@ class MegaPiController:
             return np.array([w0,w1,w2,w3])
 
 
+
+            
+
+
+
+    
+    
             
 
 
@@ -274,6 +283,35 @@ class MegaPiController:
 
     # The actual motor signal need to be tuned as well.
     # The motor signal can be larger than 50, but you may not want to go too large (e.g. 100 or -100)
+
+    def forwardMotion(self,vr):
+        """
+        Take in the linear velocity and angualr velocity and convert to q0,q1,q2,q3
+
+        Param:
+            input robot velocity
+        
+        Return:
+            q
+        """
+        if self.verbose:
+            print(f"CAR MOVE SPEED:{vr}")
+        # Convert to w by forward kinematics
+        w = self.forwardKinematic(vr)
+        print(w)
+
+        # Convert w to q
+        q = self.mapControlInput(w, 0)
+
+        #Set Motor
+        q0 = q[self.pfl]
+        q1 = q[self.pfr]
+        q2 = q[self.pbl]
+        q3 = q[self.pbr]
+        print(q)
+        self.setFourMotors(q0,q1,q2,q3)
+
+
     def carStop(self):
         if self.verbose:
             print("CAR STOP:")
@@ -317,7 +355,8 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(1.5*30)
+    #mpi_ctrl.carStraight(1.5*30)
+    mpi_ctrl.forwardMotion(np.array([[1,0,0]]))
     time.sleep(1)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)

@@ -23,12 +23,22 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
 from hw1_path.key_parser import get_key, save_terminal_settings, restore_terminal_settings
+import numpy as np
 
 class KeyJoyNode(Node):
     def __init__(self):
         super().__init__('key_joy_node')
         self.publisher_ = self.create_publisher(Joy, '/joy', 1)
         self.settings = save_terminal_settings()
+        self.waypoints = np.array([
+            [-1,0,0],
+            [-1,1,1.57]
+            [-2,1,0],
+            [-2,2,-1.57]
+            [0,0,0]   
+        ])
+        self.current_waypoint = [0,0,0]
+        self.waypoints_ind = 0
 
 
     def run(self):
