@@ -179,7 +179,7 @@ class MegaPiController:
         theta_r = math.atan2(vy,vx)
         return np.array([vx,vy,wz,vr,theta_r])
 
-    def rotationToW(rotation):
+    def rotationToW(self,rotation):
         """
         Convert rotation / minutes to rad/s
 
@@ -265,13 +265,13 @@ class MegaPiController:
             q0_brk_low = self.qbrk[self.pfl][0]
             q0_brk_high = self.qbrk[self.pfl][1]
             # Rotation
-            q0_w_low_min, q0_w_low_max = self.rotationToW(self.q0rot[0])
+            q0_rot_low = self.q0rot[0]
+            q0_w_low_min, q0_w_low_max = self.rotationToW(q0_rot_low)
             q0_w_high_min, q0_w_high_max = self.rotationToW(self.q0rot[1])
             # Build (q,w) pair
             q0_neg_pair = [(q0_brk_low, q0_w_low_min),(q_def[0], q0_w_low_max)]
             q0_pos_pair = [(q0_brk_high, q0_w_high_min),(q_def[1], q0_w_high_max)]
             q0 = self.linearApproximation(q0_neg_pair,q0_pos_pair,self.qbrk[self.pfl],w0)
-        
         ## Q1
         if w1 != 0:
             # Deadzone
@@ -413,9 +413,9 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    #mpi_ctrl.carStraight(27)
-    mpi_ctrl.forwardMotion(np.array([[-2,0,0]]))
-    time.sleep(60)
+    #mpi_ctrl.carStraight(65)
+    mpi_ctrl.forwardMotion(np.array([[-0.3,0,-0.4]]))
+    time.sleep(4)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
     #mpi_ctrl.carRotate(30)
