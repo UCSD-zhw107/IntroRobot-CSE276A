@@ -6,6 +6,7 @@ This file include code that control the robot motors
 from megapi import MegaPi
 import math
 import numpy as np
+import time
 # You need to tune these numbers, if needed, to find the correct port for each wheel
 # The range should be integers from 0 to 14
 MFR = 2     # port for motor front right
@@ -342,7 +343,7 @@ class MegaPiController:
     # The actual motor signal need to be tuned as well.
     # The motor signal can be larger than 50, but you may not want to go too large (e.g. 100 or -100)
 
-    def forwardMotion(self,vr):
+    def forwardMotion(self,vr, t):
         """
         Take in the linear velocity and angualr velocity and convert to q0,q1,q2,q3
 
@@ -368,7 +369,7 @@ class MegaPiController:
         q3 = q[self.pbr]
         print(q)
         self.setFourMotors(q0,q1,q2,q3)
-
+        time.sleep(t)
 
     def carStop(self):
         if self.verbose:

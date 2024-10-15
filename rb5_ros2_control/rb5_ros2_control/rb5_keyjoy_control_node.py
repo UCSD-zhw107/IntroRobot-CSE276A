@@ -21,6 +21,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from mpi_control import MegaPiController
@@ -40,8 +41,18 @@ class KeyJoy_MegaPiController(Node):
         self.subscription  # prevent unused variable warning
 
 
-    def move(self, direction, speed):
-        if direction == "left":
+    def move(self, direction, msg):
+        if direction == 'stop':
+            if self.verbose:
+                self.logger_.info("CAR STOP")
+            self.bot.setFourMotors(0,0,0,0)
+        else:
+            if self.verbose:
+                self.logger_.info(f"CAR MOVE")
+            vr = np.array([[msg.axes[0], msg.axes[1],msg.axes[2]]])
+            time = msg.axes[3]
+            self.bot.forwardMotion(vr,time)
+        """if direction == "left":
             if self.verbose:
                 self.logger_.info("Moving left")
             self.bot.setFourMotors(speed, speed, -speed, -speed)
@@ -76,12 +87,17 @@ class KeyJoy_MegaPiController(Node):
         else:
             if self.verbose:
                 self.logger_.info("Stopping")
-            self.bot.setFourMotors(0, 0, 0, 0)
+            self.bot.setFourMotors(0, 0, 0, 0)"""
 
 
     def joy_callback(self, msg):
+
+        if msg.axes[4] == -1 or msg.axes[4] == 2:
+            self.move("stop", msg)
+        else:
+            self.move("target", msg)
         
-        if msg.axes[0] > 0.0:
+        """if msg.axes[0] > 0.0:
             # left
             self.move("left", 30)
         elif msg.axes[0] < 0.0:
@@ -100,7 +116,7 @@ class KeyJoy_MegaPiController(Node):
             # turn counter clock-wise 
             self.move("ccwise", 30)
         else:
-            self.move("stop", 0)
+            self.move("stop", 0)"""
 
 
 
