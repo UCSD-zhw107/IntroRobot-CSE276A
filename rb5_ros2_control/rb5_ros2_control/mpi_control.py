@@ -54,15 +54,22 @@ Q_SCALE = 1
 Q_DEFAULT = (-100*Q_SCALE,100*Q_SCALE)
 
 #Q_BRAEK: the range of q for each wheel where w=0
-Q_BREAK = [(-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
+Q_BREAK = [(-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE)]
+#Q_BREAK_GROUND = [(-49*Q_SCALE,47*Q_SCALE), (-47*Q_SCALE,47*Q_SCALE), (-49*Q_SCALE,49*Q_SCALE), (-49*Q_SCALE,46*Q_SCALE)]
+#Q_BREAK = [(-27*Q_SCALE,27*Q_SCALE), (-27*Q_SCALE,27*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE), (-26*Q_SCALE,26*Q_SCALE)]
 
-#W_DEFAUlT: default range of w [min, max] for each wheel
+# W measured on hand
 Q0_ROTATION = [(-35,-153), (34.5,152.3)]
 Q1_ROTATION = [(-32.9,-142), (32.7,142)]
 Q2_ROTATION = [(-34.4,-151.5), (34.7,152)]
 Q3_ROTATION = [(-34.2,-154), (34.5,154.5)]
 
 
+# W measured on ground
+Q0_ROTATION_GROUND = [(-33.5,-143), (33.5,139.4)]
+Q1_ROTATION_GROUND = [(-32,-146), (32.4,140)]
+Q2_ROTATION_GROUND = [(-32.7,-143), (34.6,139.4)]
+Q3_ROTATION_GROUND = [(-31.6,-143.5), (33.55,144.4)]
 
 
 class MegaPiController:
@@ -93,10 +100,10 @@ class MegaPiController:
         self.qdef = Q_DEFAULT
         self.qbrk = Q_BREAK
         self.qscale = Q_SCALE
-        self.q0rot = Q0_ROTATION
-        self.q1rot = Q1_ROTATION
-        self.q2rot = Q2_ROTATION
-        self.q3rot = Q3_ROTATION
+        self.q0rot = Q0_ROTATION_GROUND
+        self.q1rot = Q1_ROTATION_GROUND
+        self.q2rot = Q2_ROTATION_GROUND
+        self.q3rot = Q3_ROTATION_GROUND
 
 
     
@@ -414,9 +421,9 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    #mpi_ctrl.carStraight(65)
-    mpi_ctrl.forwardMotion(np.array([[-0.3,0,-0.4]]))
-    time.sleep(4)
+    mpi_ctrl.carStraight(-27)
+    #mpi_ctrl.forwardMotion(np.array([[-0.3,0,-0.4]]))
+    time.sleep(60)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
     #mpi_ctrl.carRotate(30)
