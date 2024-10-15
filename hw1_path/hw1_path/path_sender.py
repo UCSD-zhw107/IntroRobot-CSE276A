@@ -146,7 +146,7 @@ class KeyJoyNode(Node):
         joy_msg.axes = [0.0 ,0.0 ,0.0 ,0.0 ,0.0 ,0.0 ,0.0 ,0.0]
         joy_msg.buttons = [0, 0, 0, 0, 0, 0, 0, 0]
         if key == 'w':
-            if self.waypoints_ind != len(self.waypoints) - 1:
+            if self.waypoints_ind != len(self.waypoints):
                 motion = self.pathPlanning()
                 self.waypoints_ind += 1
                 vx = motion[0]
