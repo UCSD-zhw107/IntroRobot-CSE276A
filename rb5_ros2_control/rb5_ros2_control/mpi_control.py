@@ -377,6 +377,7 @@ class MegaPiController:
         print(q)
         self.setFourMotors(q0,q1,q2,q3)
         time.sleep(t)
+        self.setFourMotors(0,0,0,0)
 
     def carStop(self):
         if self.verbose:

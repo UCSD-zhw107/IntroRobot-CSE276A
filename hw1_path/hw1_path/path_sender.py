@@ -28,9 +28,14 @@ from hw1_path.key_parser import get_key, save_terminal_settings, restore_termina
 import numpy as np
 
 # Gain
-KA = 1.1
-KP = 1.0
-KB = -1.0
+#KA = 0.6
+#KP = 0.7
+#KB = -0.05
+
+
+KA = 0.6
+KP = 0.7
+KB = -0.7
 
 class KeyJoyNode(Node):
     def __init__(self):
@@ -50,10 +55,9 @@ class KeyJoyNode(Node):
         self.kp = KP
         self.kb = KB
 
-    def pathPlanning(self):
+    """def pathPlanning(self, dt):
         # Current pose
         current_pose = self.current_waypoint
-        print(f'Current Post: {current_pose}')
         current_ind = self.waypoints_ind
         target = self.waypoints[current_ind]
         print(f'Target Pose: {target}')
@@ -94,36 +98,73 @@ class KeyJoyNode(Node):
         vy = res[1]
         wz = res[2]
         print(f"vx: {vx}, vy: {vy}, wz: {wz}")
-
-        v_total = np.sqrt(vx**2 + vy **2)
-
-        if v_total == 0:
-            print("v_total is 0, cannot divide by 0")
-            t_linear = 0
-        else:
-            t_linear = abs(p) / abs(v_total)
-
-        print(f"v_total: {v_total}, t_linear: {t_linear}")
-
-        if wz == 0:
-            print("wz is 0, cannot divide by 0")
-            t_angular = 0
-        else:
-            t_angular = abs(b) / abs(wz)
-
-        print(f"t_angular: {t_angular}")
-
-        t = max(t_linear, t_angular)
-        print(f"Time to reach the waypoint: {t}")
-
-        x_r += vx * t
-        y_r += vy * t
-        theta_r += wz * t
+        x_r += vx * dt
+        y_r += vy * dt
+        theta_r += wz * dt
         theta_r = (theta_r + np.pi) % (2 * np.pi) - np.pi
-        self.current_waypoint = [x_r, y_r, theta_r]
+        vx_w = vx * math.cos(theta_r) - vy * math.sin(theta_r)
+        vy_w = vx* math.sin(theta_r) + vy * math.cos(theta_r)
+        x_r_update = x_r + vx_w * dt
+        y_r_update = y_r + vy_w * dt
+        theta_r_update = theta_r + wz * dt
+        theta_r_update = (theta_r_update + np.pi) % (2 * np.pi) - np.pi
 
 
-        return [vx, vy, wz, t]
+
+        self.current_waypoint = [x_r_update, y_r_update, theta_r_update]
+        print(f'Current Post: {self.current_waypoint}')
+        return [vx, vy, wz, dt]"""
+
+
+    def pathPlanning(self, dt):
+        # Current pose
+        current_pose = self.current_waypoint
+        current_ind = self.waypoints_ind
+        target = self.waypoints[current_ind]
+        print(f'Target Pose: {target}')
+
+        # Current robot position and orientation in world frame
+        x_r, y_r, theta_r = current_pose[0], current_pose[1], current_pose[2]
+
+        # Target position in world frame
+        x_w, y_w, theta_w = target[0], target[1], target[2]
+        dx = x_w - x_r
+        dy = y_w - y_r
+        p = np.sqrt(dx**2 + dy**2)
+        #p_theta = math.atan2(dy,dx)
+        #p_theta = math.atan2(dy,dx)
+        #a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
+        a = math.atan2(dy,dx) - theta_r
+        a = (a + np.pi) % (2 * np.pi) - np.pi
+        b = np.arctan2(np.sin(theta_w - theta_r - a), np.cos(theta_w - theta_r - a))
+
+        # Decide whether to move forward or backward
+        if abs(a) == np.pi:
+            a = 0
+            b = 0
+            p = -p
+
+        v = self.kp * p
+        gamma = self.ka * a + self.kb * b
+        matrix_v_g = np.array([[v],[gamma]])
+        matrix_rotate = np.array([[math.cos(current_pose[2]), 0], 
+                                  [math.sin(current_pose[2]), 0], 
+                                  [0,1]])
+        res = np.dot(matrix_rotate, matrix_v_g)
+        res = res.T.flatten()
+        vx = res[0]
+        vy = res[1]
+        wz = res[2]
+        print(f"vx: {vx}, vy: {vy}, wz: {wz}")
+        x_r_update = x_r + vx * dt
+        y_r_update = y_r + vy * dt
+        theta_r_update = theta_r + wz * dt
+        theta_r_update = (theta_r_update + np.pi) % (2 * np.pi) - np.pi
+        self.current_waypoint = [x_r_update, y_r_update, theta_r_update]
+        print(f'Current Post: {self.current_waypoint}')
+        vx_r = math.cos(theta_r) * vx + math.sin(theta_r) * vy
+        vy_r = -math.sin(theta_r) * vx + math.cos(theta_r) * vy
+        return [vx_r, vy_r, wz, dt]
 
     def run(self):
         while True:
@@ -135,8 +176,6 @@ class KeyJoyNode(Node):
             if flag is False:
                 break
 
-            # publish joy
-            self.publisher_.publish(joy_msg)
     
         self.stop()
 
@@ -147,23 +186,34 @@ class KeyJoyNode(Node):
         joy_msg.buttons = [0, 0, 0, 0, 0, 0, 0, 0]
         if key == 'w':
             if self.waypoints_ind != len(self.waypoints):
-                motion = self.pathPlanning()
+                total_time = 5
+                dt = 1
+                accumulate_time = 0
+                while(accumulate_time < total_time):
+                    motion = self.pathPlanning(dt)
+                    vx = motion[0]
+                    vy = motion[1]
+                    wz = motion[2]
+                    t = motion[3]
+                    joy_msg.axes[0] = vx
+                    joy_msg.axes[1] = vy
+                    joy_msg.axes[2] = wz
+                    joy_msg.axes[3] = t
+                    joy_msg.axes[4] = 1
+                    accumulate_time += dt
+                    self.publisher_.publish(joy_msg)
+                    time.sleep(t + 0.5)
+                #self.current_waypoint[0] = self.waypoints[self.waypoints_ind][0]
+                #self.current_waypoint[1] = self.waypoints[self.waypoints_ind][1]
                 self.waypoints_ind += 1
-                vx = motion[0]
-                vy = motion[1]
-                wz = motion[2]
-                t = motion[3]
-                joy_msg.axes[0] = vx
-                joy_msg.axes[1] = vy
-                joy_msg.axes[2] = wz
-                joy_msg.axes[3] = t
-                joy_msg.axes[4] = 1
-                time.sleep(t)
                 print("MOVE DONE")
+                joy_msg.axes[4] = -1.0
+                self.publisher_.publish(joy_msg)
             else:
                 joy_msg.axes[4] = 2
         elif key == 's':
             joy_msg.axes[4] = -1.0
+            self.publisher_.publish(joy_msg)
         elif (len(key) > 0 and ord(key) == 27) or (key == '\x03'):
             flag = False
         return joy_msg, flag
