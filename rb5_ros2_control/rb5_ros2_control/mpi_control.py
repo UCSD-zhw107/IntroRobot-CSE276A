@@ -66,6 +66,18 @@ Q3_ROTATION = [(-34.2,-154), (34.5,154.5)]
 
 
 # W measured on ground
+Q0_ROTATION_GROUND_POS = [(27,33.5),(55,71.8),(75,100), (100,139.4)]
+Q0_ROTATION_GROUND_NEG = [(-27,-33.5),(-55,-72.4),(-75,-104), (-100,-143)]
+
+Q1_ROTATION_GROUND_POS = [(27,32.4),(55,71.7),(75,100.7), (100,140)]
+Q1_ROTATION_GROUND_NEG = [(-27,-32), (-55,-71.5),(-75,-101.2), (-100,-146)]
+
+Q2_ROTATION_GROUND_POS = [(27,34.6),(55,73),(75,105.3), (100,139.4)]
+Q2_ROTATION_GROUND_NEG = [(-27,-32.7), (-55,-71.2),(-75,-101.4),(-100,-143)]
+
+Q3_ROTATION_GROUND_POS = [(27,33.55),(55,72.7),(75,104),(100,144.4)]
+Q3_ROTATION_GROUND_NEG = [(-27,-31.6), (-55,-71.6),(-75,-101),(-100,-143.5)]
+
 Q0_ROTATION_GROUND = [(-33.5,-143), (33.5,139.4)]
 Q1_ROTATION_GROUND = [(-32,-146), (32.4,140)]
 Q2_ROTATION_GROUND = [(-32.7,-143), (34.6,139.4)]
@@ -321,9 +333,80 @@ class MegaPiController:
 
         return np.array([q0,q1,q2,q3])
 
+
+    def get_wheel_regressions(self):
+
+        def rotate(r):
+            return (r * math.pi * 2) / 60
         
+        # Data for q > 26
+        q_pos = np.array([27, 55, 75, 100])
+        w0_pos = np.array([33.5, 71.8, 100, 139.4])
+        w1_pos = np.array([32.4, 71.7, 100.7, 140])
+        w2_pos = np.array([34.6, 73, 105.3, 139.4])
+        w3_pos = np.array([33.55, 72.7, 104, 144.4])
 
+        # Data for q < -26
+        q_neg = np.array([-27, -55, -75, -100])
+        w0_neg = np.array([-33.5, -72.4, -104, -143])
+        w1_neg = np.array([-32, -71.5, -101.2, -146])
+        w2_neg = np.array([-32.7, -71.2, -101.4, -143])
+        w3_neg = np.array([-31.6, -71.6, -101, -143.5])
 
+        w0_pos_rad = np.array([rotate(w) for w in w0_pos])
+        w1_pos_rad = np.array([rotate(w) for w in w1_pos])
+        w2_pos_rad = np.array([rotate(w) for w in w2_pos])
+        w3_pos_rad = np.array([rotate(w) for w in w3_pos])
+
+        w0_neg_rad = np.array([rotate(w) for w in w0_neg])
+        w1_neg_rad = np.array([rotate(w) for w in w1_neg])
+        w2_neg_rad = np.array([rotate(w) for w in w2_neg])
+        w3_neg_rad = np.array([rotate(w) for w in w3_neg])
+        # Perform linear regression for each set of data
+        def perform_regression(q_values, w_values):
+            # Calculate the slope and intercept using least squares formula
+            n = len(q_values)
+            q_mean = np.mean(q_values)
+            w_mean = np.mean(w_values)
+            
+            numerator = np.sum((q_values - q_mean) * (w_values - w_mean))
+            denominator = np.sum((q_values - q_mean) ** 2)
+            slope = numerator / denominator
+            intercept = w_mean - slope * q_mean
+            return slope, intercept
+
+        # Generate regression parameters for each wheel and each range
+        wheel_regressions = {
+            "q0": {"pos": perform_regression(q_pos, w0_pos_rad), "neg": perform_regression(q_neg, w0_neg_rad)},
+            "q1": {"pos": perform_regression(q_pos, w1_pos_rad), "neg": perform_regression(q_neg, w1_neg_rad)},
+            "q2": {"pos": perform_regression(q_pos, w2_pos_rad), "neg": perform_regression(q_neg, w2_neg_rad)},
+            "q3": {"pos": perform_regression(q_pos, w3_pos_rad), "neg": perform_regression(q_neg, w3_neg_rad)},
+        }
+
+        return wheel_regressions
+            
+
+    def predict_motor(self, input_w):
+        regressions = self.get_wheel_regressions()
+        convert_q = []
+
+        for index, w in enumerate(input_w):
+            wheel_key = f'q{index}'
+            q = 0
+            if w == 0:  # Handle dead zone where w = 0
+                q = 0
+            elif w > 0:  # For w corresponding to q > 26
+                slope, intercept = regressions[wheel_key]["pos"]
+                q = (w - intercept) / slope
+                if q <= 26:  # If q falls into the dead zone, return 0
+                    q = 0
+            elif w < 0:  # For w corresponding to q < -26
+                slope, intercept = regressions[wheel_key]["neg"]
+                q = (w - intercept) / slope
+                if q >= -26:  # If q falls into the dead zone, return 0
+                    q = 0
+            convert_q.append(q)
+        return convert_q
 
             
 
@@ -367,15 +450,16 @@ class MegaPiController:
         print(w)
 
         # Convert w to q
-        q = self.mapControlInput(w)
+        #q = self.mapControlInput(w)
 
         #Set Motor
-        q0 = q[self.pfl]
-        q1 = q[self.pfr]
-        q2 = q[self.pbl]
-        q3 = q[self.pbr]
-        print(q)
-        self.setFourMotors(q0,q1,q2,q3)
+        #q0 = q[self.pfl]
+        #q1 = q[self.pfr]
+        #q2 = q[self.pbl]
+        #q3 = q[self.pbr]
+        #print(q)
+        q = self.predict_motor(w)
+        self.setFourMotors(q[self.pfl],q[self.pfr],q[self.pbl],q[self.pbr])
         time.sleep(t)
         self.setFourMotors(0,0,0,0)
 
@@ -422,7 +506,7 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(-27)
+    mpi_ctrl.carStraight(-75)
     #mpi_ctrl.forwardMotion(np.array([[-0.3,0,-0.4]]))
     time.sleep(60)
     #mpi_ctrl.carSlide(30)

@@ -33,9 +33,9 @@ import numpy as np
 #KB = -0.05
 
 
-KA = 0.6
-KP = 0.7
-KB = -0.7
+KA = 1.1
+KP = 1
+KB = -0.6
 
 class KeyJoyNode(Node):
     def __init__(self):
@@ -55,7 +55,7 @@ class KeyJoyNode(Node):
         self.kp = KP
         self.kb = KB
 
-    """def pathPlanning(self, dt):
+    def pathPlanning(self, dt):
         # Current pose
         current_pose = self.current_waypoint
         current_ind = self.waypoints_ind
@@ -78,7 +78,7 @@ class KeyJoyNode(Node):
         #a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
         a = math.atan2(dy,dx)
         a = (a + np.pi) % (2 * np.pi) - np.pi
-        b = np.arctan2(np.sin(theta_w - theta_r - a), np.cos(theta_w - theta_r - a))
+        b = np.arctan2(np.sin(theta_w - theta_r), np.cos(theta_w - theta_r))
 
         # Decide whether to move forward or backward
         if abs(a) == np.pi:
@@ -89,8 +89,8 @@ class KeyJoyNode(Node):
         v = self.kp * p
         gamma = self.ka * a + self.kb * b
         matrix_v_g = np.array([[v],[gamma]])
-        matrix_rotate = np.array([[math.cos(current_pose[2]), 0], 
-                                  [math.sin(current_pose[2]), 0], 
+        matrix_rotate = np.array([[math.cos(a), 0], 
+                                  [math.sin(a), 0], 
                                   [0,1]])
         res = np.dot(matrix_rotate, matrix_v_g)
         res = res.T.flatten()
@@ -98,10 +98,7 @@ class KeyJoyNode(Node):
         vy = res[1]
         wz = res[2]
         print(f"vx: {vx}, vy: {vy}, wz: {wz}")
-        x_r += vx * dt
-        y_r += vy * dt
-        theta_r += wz * dt
-        theta_r = (theta_r + np.pi) % (2 * np.pi) - np.pi
+        
         vx_w = vx * math.cos(theta_r) - vy * math.sin(theta_r)
         vy_w = vx* math.sin(theta_r) + vy * math.cos(theta_r)
         x_r_update = x_r + vx_w * dt
@@ -113,10 +110,10 @@ class KeyJoyNode(Node):
 
         self.current_waypoint = [x_r_update, y_r_update, theta_r_update]
         print(f'Current Post: {self.current_waypoint}')
-        return [vx, vy, wz, dt]"""
+        return [vx, vy, wz, dt]
 
 
-    def pathPlanning(self, dt):
+    """def pathPlanning(self, dt):
         # Current pose
         current_pose = self.current_waypoint
         current_ind = self.waypoints_ind
@@ -133,9 +130,7 @@ class KeyJoyNode(Node):
         p = np.sqrt(dx**2 + dy**2)
         #p_theta = math.atan2(dy,dx)
         #p_theta = math.atan2(dy,dx)
-        #a = math.atan2(math.sin(p_theta-0),math.cos(p_theta-0))
-        a = math.atan2(dy,dx) - theta_r
-        a = (a + np.pi) % (2 * np.pi) - np.pi
+        a = math.atan2(math.sin(math.atan2(dy,dx)-theta_r),math.cos(math.atan2(dy,dx)-theta_r))
         b = np.arctan2(np.sin(theta_w - theta_r - a), np.cos(theta_w - theta_r - a))
 
         # Decide whether to move forward or backward
@@ -164,7 +159,7 @@ class KeyJoyNode(Node):
         print(f'Current Post: {self.current_waypoint}')
         vx_r = math.cos(theta_r) * vx + math.sin(theta_r) * vy
         vy_r = -math.sin(theta_r) * vx + math.cos(theta_r) * vy
-        return [vx_r, vy_r, wz, dt]
+        return [vx_r, vy_r, wz, dt]"""
 
     def run(self):
         while True:
