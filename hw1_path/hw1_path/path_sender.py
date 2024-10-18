@@ -40,7 +40,8 @@ KB = -0.2
 
 KA = 1.7
 KP = 0.8
-KB = -0.4
+KB = -0.44
+
 
 
 # You need to tune these numbers, if needed, to find the correct port for each wheel
@@ -119,6 +120,8 @@ Q1_ROTATION_GROUND = [(-32,-146), (32.4,140)]
 Q2_ROTATION_GROUND = [(-32.7,-143), (34.6,139.4)]
 Q3_ROTATION_GROUND = [(-31.6,-143.5), (33.55,144.4)]
 
+P_THRESHOLD = 0.3
+
 
 class KeyJoyNode(Node):
     def __init__(self):
@@ -161,6 +164,7 @@ class KeyJoyNode(Node):
         self.q1rot = Q1_ROTATION_GROUND
         self.q2rot = Q2_ROTATION_GROUND
         self.q3rot = Q3_ROTATION_GROUND
+        self.pthreshold = P_THRESHOLD
 
 
 
@@ -365,7 +369,8 @@ class KeyJoyNode(Node):
             p = -p
 
         v = self.kp * p
-        gamma = self.ka * a + self.kb * b
+        #gamma = self.ka * a + self.kb * b
+        gamma = self.ka * a if p > self.pthreshold else self.kb * b
         matrix_v_g = np.array([[v],[gamma]])
         matrix_rotate = np.array([[math.cos(current_pose[2]), 0], 
                                   [math.sin(current_pose[2]), 0], 
