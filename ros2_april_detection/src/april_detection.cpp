@@ -35,12 +35,19 @@ tuple<vector<apriltag_pose_t>, vector<int>, cv::Mat> AprilDetection::processImag
   vector<apriltag_pose_t> poses;
   vector<int> ids;
 
-  tag_info.tagsize = 0.159;
+
+  // Change this to calibrated one
+  tag_info.tagsize = 0.162;
+  /*
   tag_info.fx = 663.57507; 
   tag_info.fy = 694.47272;
   tag_info.cx = 956.22994;
   tag_info.cy = 539.54574;
-
+  */
+  tag_info.fx = 710.108338;
+  tag_info.fy = 708.014438;
+  tag_info.cx = 970.998139;
+  tag_info.cy = 540.152023;
   for (int i=0; i<zarray_size(detections); i++){
 
     zarray_get(detections, i, &det);
