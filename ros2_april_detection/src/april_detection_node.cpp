@@ -25,12 +25,19 @@ double intrinsics[9] = {691.01615,    0.     ,  954.51,
                       0.     ,    0.     ,    1.};
 */
 
-double distortion_coeff[5] = {0.022414 -0.022437 -0.003269 -0.002986 0.000000};
+/* 阳台calibration
+double distortion_coeff[5] = {0.022414,-0.022437,-0.003269,-0.002986,0.000000};
 
 double intrinsics[9] = {710.108338,    0.     ,  970.998139,
                       0.     ,  708.014438,  540.152023,
                       0.     ,    0.     ,    1.};
-                      
+*/
+
+double distortion_coeff[5] = {0.006506, -0.012291, 0.004780, 0.004745, 0.000000};
+double intrinsics[9] = {716.416698,    0.     ,  990.363088,
+                      0.     ,  712.653216,  538.853784,
+                      0.     ,    0.     ,    1.};
+
 const cv::Mat d(cv::Size(1, 5), CV_64FC1, distortion_coeff);
 const cv::Mat K(cv::Size(3, 3), CV_64FC1, intrinsics);
 

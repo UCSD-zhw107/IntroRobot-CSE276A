@@ -44,10 +44,10 @@ tuple<vector<apriltag_pose_t>, vector<int>, cv::Mat> AprilDetection::processImag
   tag_info.cx = 956.22994;
   tag_info.cy = 539.54574;
   */
-  tag_info.fx = 710.108338;
-  tag_info.fy = 708.014438;
-  tag_info.cx = 970.998139;
-  tag_info.cy = 540.152023;
+  tag_info.fx = 716.416698;
+  tag_info.fy = 712.653216;
+  tag_info.cx = 990.363088;
+  tag_info.cy = 538.853784;
   for (int i=0; i<zarray_size(detections); i++){
 
     zarray_get(detections, i, &det);
