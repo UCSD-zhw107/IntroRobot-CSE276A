@@ -94,9 +94,10 @@ class CameraListenNode(Node):
                 ori_z = self.closest_marker.pose.orientation.z
                 ori_w = self.closest_marker.pose.orientation.w
 
-                self.get_logger().info(f"Closest Marker ID: {marker_id} at distance: {self.closest_distance:.2f} cm")
-                self.get_logger().info(f"Position - x: {pos_x}, y: {pos_y}, z: {pos_z}")
-                self.get_logger().info(f"Orientation - x: {ori_x}, y: {ori_y}, z: {ori_z}, w: {ori_w}")
+                #self.get_logger().info(f"Closest Marker ID: {marker_id} at distance: {self.closest_distance:.2f} cm")
+                #self.get_logger().info(f"Position - x: {pos_x}, y: {pos_y}, z: {pos_z}")
+                #self.get_logger().info(f"Orientation - x: {ori_x}, y: {ori_y}, z: {ori_z}, w: {ori_w}")
+                self.get_logger().info('April Tag Detected')
                 pos = [pos_x,pos_y,pos_z]
                 ori = [ori_x,ori_y,ori_z,ori_w]
                 self.last_label_pose = {'id': int(marker_id), 'pose': pos, 'orientation': ori}
@@ -143,7 +144,7 @@ class CameraListenNode(Node):
             # Get vision feedback
             self.start_listening()
             while self.is_listening:
-                rclpy.spin_once(self, timeout_sec=0.1)
+                rclpy.spin_once(self, timeout_sec=0.5)
 
             # Compute robot pose
             if self.last_label_pose != None:
@@ -158,7 +159,10 @@ class CameraListenNode(Node):
             time.sleep(motion[3] + 0.5)
             # Update pose
             self.current_pose = self.controller.updatePose(motion,self.current_pose)
-        
+            self.get_logger().info(f'Pose X: {self.current_pose[0]}')
+            self.get_logger().info(f'Pose Y: {self.current_pose[1]}')
+            self.get_logger().info(f'Pose Ori: {self.current_pose[2]}')
+
 
 
         return 0
@@ -203,10 +207,13 @@ def main(args=None):
     waypoints = [
         [0,0,0],
         [1,0,0],
+        [1,2,math.pi/2]
     ]
     node.split_waypoint(waypoints)
     label = {
-        0: [1.5, 0, math.pi],
+        0: [1.275, 0, math.pi],
+        1: [1.0, 2.13, -(math.pi/2)],
+        2: [0.55, 1.0, -(math.pi/2)]
     }
     node.set_label_location(label=label)
     node.run()

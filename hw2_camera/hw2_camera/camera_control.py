@@ -3,8 +3,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 # Gain
-KA = 1.7
-KP = 0.8
+KA = 1
+KP = .8
 KB = -0.44
 
 P_THRESHOLD = 0.3
@@ -39,7 +39,7 @@ class Camera_control():
         v = self.kp * p
         gamma = self.ka * a 
         
-        print(f"vx: {v}, vy: {0}, wz: {gamma}")
+        #print(f"vx: {v}, vy: {0}, wz: {gamma}")
         t_translation = abs(p / v) if v != 0 else 0  
         t_rotation = abs(a / gamma) if gamma != 0 else 0  
         t_total = t_translation + t_rotation
@@ -67,8 +67,8 @@ class Camera_control():
             [np.sin(theta_r), np.cos(theta_r)]
         ])
         pos_robot_w = pose_l_w - np.dot(R_robot_world, pose_l_r)
-        x = pos_robot_w.flatten()[0]
-        y = pos_robot_w.flatten()[1]
+        x = pos_robot_w.T.flatten()[0]
+        y = pos_robot_w.T.flatten()[1]
         return [x,y,theta_r]
     
     def updatePose(self,motion,current):
