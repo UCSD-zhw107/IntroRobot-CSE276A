@@ -2,9 +2,14 @@ import math
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+
+"""
+KP=1.2
+"""
+
 # Gain
 KA = 1
-KP = .8
+KP = 1.3
 KB = -0.44
 
 P_THRESHOLD = 0.3
@@ -47,7 +52,7 @@ class Camera_control():
     
     def cameraToRobot(self,trans):
         x = trans[2]
-        y = -trans[0] - 0.01
+        y = -trans[0] + 0.01
         return np.array([x,y])
     
     def computeObservedPose(self, trans, ori, label_pos):
@@ -89,3 +94,16 @@ class Camera_control():
         theta_w = current[2] + wz * t
         theta_w = (theta_w + math.pi) % (2 * math.pi) - math.pi
         return [x_w, y_w, theta_w]
+    
+
+    def pose_error(self,current, target):
+    
+        x1, y1, theta1 = current[0], current[1], current[2]
+        x2, y2, theta2 = target[0], target[1], target[2]
+
+        distance_error = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+        
+        angle_error = math.atan2(math.sin(theta2 - theta1), math.cos(theta2 - theta1))
+
+        return distance_error, angle_error

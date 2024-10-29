@@ -141,6 +141,10 @@ class CameraListenNode(Node):
     # Control Loop
     def controlLoop(self):
         for target in self.waypoints:
+            #pos_error, ori_error = self.controller.pose_error(self.current_pose,target)
+            #if(pos_error < 0.15 and abs(ori_error) < math.radians(20)):
+                #print("Skipped")
+                #continue
             # Get vision feedback
             self.start_listening()
             while self.is_listening:
