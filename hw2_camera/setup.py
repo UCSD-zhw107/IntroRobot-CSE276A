@@ -6,6 +6,11 @@ setup(
     name=package_name,
     version='0.0.0',
     packages=[package_name],
+    py_modules=[
+        'hw2_camera.camera_listener',      
+        'hw2_camera.key_parser', 
+        'hw2_camera.camera_control',
+    ],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
