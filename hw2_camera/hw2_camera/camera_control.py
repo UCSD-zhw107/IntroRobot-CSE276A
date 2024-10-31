@@ -26,7 +26,7 @@ class Camera_control():
         self.pthreshold = P_THRESHOLD
 
 
-    def control(self, current, target,dt):
+    def control(self, current, target,dt, state):
 
         # Current robot position and orientation in world frame
         x_r, y_r, theta_r = current[0], current[1], current[2]
@@ -103,7 +103,7 @@ class Camera_control():
         x = res[0,2]
         y = res[1,2]
         return [x,y,theta]
-    
+
     def updatePose(self,motion,current):
         v = motion[0]
         gamma = motion[2]

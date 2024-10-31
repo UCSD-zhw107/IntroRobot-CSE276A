@@ -129,13 +129,22 @@ class WaypointControlNode(Node):
         self.get_logger().info(f'Pose Y: {self.current_pose[1]}')
         self.get_logger().info(f'Pose Ori: {self.current_pose[2]}')
         # Error
+        state = None
         pos_error, ori_error = self.controller.pose_error(self.current_pose, target)
-        if pos_error < 0.16 and ori_error < math.radians(5):
-            self.current_waypoint_index += 1
-            self.get_logger().warn('Next Target')
-            return
+        if target == [1,0,math.pi/2]:
+            state = 'rotation'
+            if ori_error < math.radians(10):
+                self.current_waypoint_index += 1
+                self.get_logger().warn('Next Target')
+                return
+        else:
+            state = 'translation'
+            if pos_error < 0.16 and ori_error < math.radians(10):
+                self.current_waypoint_index += 1
+                self.get_logger().warn('Next Target')
+                return
         dt = 0.5
-        motion = self.controller.control(self.current_pose, target, dt)
+        motion = self.controller.control(self.current_pose, target, dt, state)
         self.sendMotion(motion)
         time.sleep(motion[3] + 0.5)
 
@@ -147,11 +156,12 @@ def main(args=None):
         [0,0,0],
         [1,0,0],
         [1,0,math.pi/2],
+        [1,1,math.pi/2],
         [1,2,math.pi/2]
     ]
     waypoint_control_node.set_way_point(waypoints)
     label = {
-        0: [1.175, 0, math.pi],
+        0: [1.275, 0, math.pi],
         1: [1.0, 2.16, -(math.pi/2)],
         2: [0.65, 1.0, -(math.pi/2)]
     }
