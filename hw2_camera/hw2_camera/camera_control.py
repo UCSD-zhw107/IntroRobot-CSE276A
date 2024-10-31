@@ -13,8 +13,8 @@ KP=1.3
 
 # Gain
 KA = 0.3
-KP = 0.5
-KB = 1.32
+KP = 0.57
+KB = 1.1
 
 P_THRESHOLD = 0.3
 
@@ -59,7 +59,7 @@ class Camera_control():
         y = -trans[0] + 0.01
         return np.array([x,y])
     
-    def computeObservedPose(self, trans, ori, label_pos):
+    '''def computeObservedPose(self, trans, ori, label_pos):
         rotation = R.from_quat(ori)
         roll_pitch_yaw = rotation.as_euler('xyz', degrees=True)
         dywa_r = math.radians(roll_pitch_yaw.flatten()[0])
@@ -78,7 +78,31 @@ class Camera_control():
         pos_robot_w = pose_l_w - np.dot(R_robot_world, pose_l_r)
         x = pos_robot_w.T.flatten()[0]
         y = pos_robot_w.T.flatten()[1]
-        return [x,y,theta_r]
+        return [x,y,theta_r]'''
+    
+    def computeObservedPose(self, pose,ori,x_w):
+        rotation = R.from_quat(ori)
+        roll = rotation.as_euler('xyz', degrees=False)[0]
+        label_ori = np.arctan2(np.sin(roll-math.pi), np.cos(roll - math.pi))
+        label_pose = self.cameraToRobot(pose)
+        T_r_l = np.array([
+            [np.cos(label_ori), -np.sin(label_ori), label_pose[0]],
+            [np.sin(label_ori), np.cos(label_ori), label_pose[1]],
+            [0,0,1]
+        ])
+
+        T_l_w = np.array([
+            [np.cos(x_w[2]), -np.sin(x_w[2]), x_w[0]],
+            [np.sin(x_w[2]), np.cos(x_w[2]), x_w[1]],
+            [0,0,1]
+        ])
+
+        A_inv = np.linalg.inv(T_r_l)
+        res = np.dot(T_l_w, A_inv)
+        theta = np.arctan2(res[1,0], res[0,0])
+        x = res[0,2]
+        y = res[1,2]
+        return [x,y,theta]
     
     def updatePose(self,motion,current):
         v = motion[0]

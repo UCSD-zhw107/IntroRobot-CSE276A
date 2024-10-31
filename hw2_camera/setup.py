@@ -10,6 +10,7 @@ setup(
         'hw2_camera.camera_listener',      
         'hw2_camera.key_parser', 
         'hw2_camera.camera_control',
+        'hw2_camera.test_node'
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -25,7 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'camera_listener = hw2_camera.camera_listener:main'
+            'camera_listener = hw2_camera.camera_listener:main',
+            'test_node = hw2_camera.test_node:main'
         ],
     },
 )
