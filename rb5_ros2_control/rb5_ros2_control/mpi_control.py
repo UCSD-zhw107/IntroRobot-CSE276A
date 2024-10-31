@@ -335,7 +335,7 @@ class MegaPiController:
 
 
     def get_wheel_regressions(self):
-
+        """ Ground
         def rotate(r):
             return (r * math.pi * 2) / 60
         
@@ -352,6 +352,24 @@ class MegaPiController:
         w1_neg = np.array([-32, -71.5, -101.2, -146])
         w2_neg = np.array([-32.7, -71.2, -101.4, -143])
         w3_neg = np.array([-31.6, -71.6, -101, -143.5])
+        """
+
+        def rotate(r):
+            return (r * math.pi * 2) / 10
+        
+        # Data for q > 26
+        q_pos = np.array([26, 55, 75, 100])
+        w0_pos = np.array([3.6, 11.2, 16.2, 22.6])
+        w1_pos = np.array([3.6, 11.0, 16.1, 22.5])
+        w2_pos = np.array([3.7, 11.25, 16.5, 23])
+        w3_pos = np.array([3.6, 11.14, 16.3, 22.5])
+
+        # Data for q < -26
+        q_neg = np.array([-26, -55, -75, -100])
+        w0_neg = np.array([-3.5, -9.7, -16, -22.3])
+        w1_neg = np.array([-3.5, -9.5, -15.8, -22.3])
+        w2_neg = np.array([-3.5, -9.7, -17, -22.5])
+        w3_neg = np.array([-3.5, -9.7, -16, -22.3])
 
         w0_pos_rad = np.array([rotate(w) for w in w0_pos])
         w1_pos_rad = np.array([rotate(w) for w in w1_pos])
@@ -398,12 +416,12 @@ class MegaPiController:
             elif w > 0:  # For w corresponding to q > 26
                 slope, intercept = regressions[wheel_key]["pos"]
                 q = (w - intercept) / slope
-                if q <= 26:  # If q falls into the dead zone, return 0
+                if q <= 25:  # If q falls into the dead zone, return 0
                     q = 0
             elif w < 0:  # For w corresponding to q < -26
                 slope, intercept = regressions[wheel_key]["neg"]
                 q = (w - intercept) / slope
-                if q >= -26:  # If q falls into the dead zone, return 0
+                if q >= -25:  # If q falls into the dead zone, return 0
                     q = 0
             convert_q.append(q)
         return convert_q
@@ -459,6 +477,7 @@ class MegaPiController:
         #q3 = q[self.pbr]
         #print(q)
         q = self.predict_motor(w)
+        print(q)
         self.setFourMotors(q[self.pfl],q[self.pfr],q[self.pbl],q[self.pbr])
         time.sleep(t)
         self.setFourMotors(0,0,0,0)
@@ -506,9 +525,9 @@ if __name__ == "__main__":
     import time
     mpi_ctrl = MegaPiController(port='/dev/ttyUSB0', verbose=True)  
     time.sleep(1)
-    mpi_ctrl.carStraight(-75)
-    #mpi_ctrl.forwardMotion(np.array([[-0.3,0,-0.4]]))
-    time.sleep(60)
+    ##mpi_ctrl.carStraight(-26)
+    mpi_ctrl.forwardMotion(np.array([1,0,0]), 1)
+    #time.sleep(10)
     #mpi_ctrl.carSlide(30)
     #time.sleep(1)
     #mpi_ctrl.carRotate(30)

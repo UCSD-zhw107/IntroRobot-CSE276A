@@ -6,11 +6,15 @@ from scipy.spatial.transform import Rotation as R
 """
 KP=1.2
 """
+"""
+KA=1.1
+KP=1.3
+"""
 
 # Gain
-KA = 1
-KP = 1.3
-KB = -0.44
+KA = 0.3
+KP = 0.5
+KB = 1.32
 
 P_THRESHOLD = 0.3
 
@@ -22,7 +26,7 @@ class Camera_control():
         self.pthreshold = P_THRESHOLD
 
 
-    def control(self, current, target):
+    def control(self, current, target,dt):
 
         # Current robot position and orientation in world frame
         x_r, y_r, theta_r = current[0], current[1], current[2]
@@ -34,21 +38,21 @@ class Camera_control():
         dx = x_w - x_r
         dy = y_w - y_r
         p = np.sqrt(dx**2 + dy**2)
-        a = math.atan2(math.sin(theta_w-theta_r),math.cos(theta_w-theta_r))
-
+        #a = math.atan2(math.sin(math.atan2(dy,dx)-theta_r),math.cos(math.atan2(dy,dx)-theta_r))
+        b = np.arctan2(np.sin(theta_w - theta_r), np.cos(theta_w - theta_r))
+        a = 0
         # Decide whether to move forward or backward
         if abs(a) == np.pi:
             a = 0
             p = -p
 
         v = self.kp * p
-        gamma = self.ka * a 
-        
+        gamma = self.ka * a  + self.kb * b      
         #print(f"vx: {v}, vy: {0}, wz: {gamma}")
         t_translation = abs(p / v) if v != 0 else 0  
         t_rotation = abs(a / gamma) if gamma != 0 else 0  
         t_total = t_translation + t_rotation
-        return [v, 0, gamma, t_total]
+        return [v, 0, gamma, dt]
     
     def cameraToRobot(self,trans):
         x = trans[2]
