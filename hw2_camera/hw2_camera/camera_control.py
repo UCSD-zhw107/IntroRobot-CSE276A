@@ -12,9 +12,9 @@ KP=1.3
 """
 
 # Gain
-KA = 0.3
+KA = 1.2
 KP = 0.57
-KB = 1.1
+KB = 1.2
 
 P_THRESHOLD = 0.3
 
@@ -38,16 +38,20 @@ class Camera_control():
         dx = x_w - x_r
         dy = y_w - y_r
         p = np.sqrt(dx**2 + dy**2)
-        #a = math.atan2(math.sin(math.atan2(dy,dx)-theta_r),math.cos(math.atan2(dy,dx)-theta_r))
+        a = math.atan2(math.sin(math.atan2(dy,dx)-theta_r),math.cos(math.atan2(dy,dx)-theta_r))
         b = np.arctan2(np.sin(theta_w - theta_r), np.cos(theta_w - theta_r))
-        a = 0
+        
         # Decide whether to move forward or backward
         if abs(a) == np.pi:
             a = 0
             p = -p
 
         v = self.kp * p
-        gamma = self.ka * a  + self.kb * b      
+        gamma = 0
+        if state == 'rotation':
+            gamma = self.kb * b
+        else:
+            gamma = self.ka * a if p > self.pthreshold else self.kb * b
         #print(f"vx: {v}, vy: {0}, wz: {gamma}")
         t_translation = abs(p / v) if v != 0 else 0  
         t_rotation = abs(a / gamma) if gamma != 0 else 0  

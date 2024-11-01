@@ -161,10 +161,16 @@ def main(args=None):
     ]
     waypoint_control_node.set_way_point(waypoints)
     label = {
-        0: [1.275, 0, math.pi],
+        5: [1.275, 0, math.pi],
         1: [1.0, 2.16, -(math.pi/2)],
         2: [0.65, 1.0, -(math.pi/2)]
     }
+    '''
+    0: [0.0, -0.107, math.pi/2],
+    1: [1.0, 2.26, -(math.pi/2)],
+    2: [0.13, 1.21, 0],
+    5: [1.275, 0, -math.pi]
+    '''
     waypoint_control_node.set_label_location(label=label)
     waypoint_control_node.run()  # 使用run函数启动控制逻辑
     waypoint_control_node.destroy_node()
