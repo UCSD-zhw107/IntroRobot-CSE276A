@@ -7,7 +7,7 @@ from hw2_camera.camera_control import Camera_control
 import time
 import math
 
-class WaypointControlNode(Node):
+class PBSControlNode(Node):
     def __init__(self):
         super().__init__('waypoint_control_node')
 
@@ -17,12 +17,12 @@ class WaypointControlNode(Node):
         self.current_pose = None
         
         # Camera Reading Time
-        self.wait_time_for_camera = 10.0  # 固定等待摄像头数据的时间
-        self.data_collection_duration = 3.0  # 数据收集持续时间 (秒)
+        self.wait_time_for_camera = 10.0  
+        self.data_collection_duration = 3.0  
         
         
         
-        # 订阅摄像头数据
+        # Subscribe & Publish
         self.subscription = self.create_subscription(
             PoseStamped,
             '/april_poses',
@@ -31,16 +31,15 @@ class WaypointControlNode(Node):
         )
         self.publisher_ = self.create_publisher(Joy, '/joy', 1)
         
-        # 初始化摄像头数据缓存
-        self.camera_data_list = []  # 用于缓存3秒内的所有消息
-        self.received_data = False  # 标志用于检测是否收到数据
+        # Data Storage
+        self.camera_data_list = []  
+        self.received_data = False  
         self.label_loc = {}
         self.controller = Camera_control()
 
     def camera_callback(self, msg):
-        # 在3秒收集时间内，缓存摄像头数据
         self.camera_data_list.append(msg)
-        self.received_data = True  # 标志设置为True，表示收到数据
+        self.received_data = True 
 
     def set_label_location(self,label):
         self.label_loc = label
@@ -68,38 +67,33 @@ class WaypointControlNode(Node):
     def run(self):
         while self.current_waypoint_index < len(self.waypoints):
             
-            # 当前航点
             current_waypoint = self.waypoints[self.current_waypoint_index]
             self.get_logger().warn(f'Target: {current_waypoint}')
 
-            # 等待10秒让摄像头数据更新
+            # Wait 10s for image update
             self.get_logger().info('Waiting for 10 seconds before receiving camera data...')
             time.sleep(self.wait_time_for_camera)
 
-            # 开始3秒数据收集
+            # Collect data for 3s
             self.get_logger().info('Collecting camera data for 3 seconds...')
-            self.camera_data_list.clear()  # 清空之前缓存的数据
-            self.received_data = False  # 重置标志
+            self.camera_data_list.clear()  
+            self.received_data = False  
             start_time = time.time()
             
             while time.time() - start_time < self.data_collection_duration:
-                # 持续处理回调，以确保数据接收
                 rclpy.spin_once(self, timeout_sec=0.1)
 
-            # 检查是否收到了任何数据
+            # Control with closest label
             if self.received_data:
                 closest_marker = self.find_closest_marker(self.camera_data_list)
                 self.get_logger().info(f'Closest marker found with id: {closest_marker.header.frame_id}')
-                
-                # 使用距离最近的标记信息进行控制
                 self.compute_control(current_waypoint, closest_marker)
                 
             else:
-                # 如果没有接收到数据
                 self.get_logger().warn('No camera data received during data collection period.')
 
     def find_closest_marker(self, camera_data_list):
-        # 找到距离最近的标记
+        # Find the closest label
         min_distance = float('inf')
         closest_marker = None
         for msg in camera_data_list:
@@ -110,7 +104,7 @@ class WaypointControlNode(Node):
         return closest_marker
 
     def compute_control(self, target, closest_marker):
-        # 根据航点和摄像头数据计算控制输出
+        # Parse data
         pos_x = closest_marker.pose.position.x
         pos_y = closest_marker.pose.position.y
         pos_z = closest_marker.pose.position.z
@@ -119,7 +113,7 @@ class WaypointControlNode(Node):
         ori_z = closest_marker.pose.orientation.z
         ori_w = closest_marker.pose.orientation.w
         
-        # 假设计算得到的控制输出值
+        # Convert label pose from Camera frame to Robot frame
         label_pose = [pos_x,pos_y,pos_z]
         label_ori = [ori_x,ori_y,ori_z,ori_w]
         label_id = closest_marker.header.frame_id
@@ -131,7 +125,7 @@ class WaypointControlNode(Node):
         # Error
         state = None
         pos_error, ori_error = self.controller.pose_error(self.current_pose, target)
-        if target == [1,0,math.pi/2]:
+        if target == [1,2,math.atan2(-2, -1)] or target ==[0,0,0]:
             state = 'rotation'
             if ori_error < math.radians(10):
                 self.current_waypoint_index += 1
@@ -151,19 +145,20 @@ class WaypointControlNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    waypoint_control_node = WaypointControlNode()
+    waypoint_control_node = PBSControlNode()
     waypoints = [
-        [0,0,0],
-        [1,0,0],
-        [1,0,math.pi/2],
-        [1,1,math.pi/2],
-        [1,2,math.pi/2]
+        [1,2,math.pi/2],
+        [1,2,math.atan2(-2, -1)],
+        [0.5,1,math.atan2(-2, -1)],
+        [0,0,math.atan2(-2, -1)],
+        [0,0,0]
     ]
     waypoint_control_node.set_way_point(waypoints)
     label = {
-        5: [1.275, 0, math.pi],
-        1: [1.0, 2.16, -(math.pi/2)],
-        2: [0.65, 1.0, -(math.pi/2)]
+        0: [0.0, -0.107, math.pi/2],
+        1: [1.0, 2.26, -(math.pi/2)],
+        2: [0.13, 1.21, 0],
+        5: [1.275, 0, -math.pi]
     }
     '''
     0: [0.0, -0.107, math.pi/2],
@@ -172,7 +167,7 @@ def main(args=None):
     5: [1.275, 0, -math.pi]
     '''
     waypoint_control_node.set_label_location(label=label)
-    waypoint_control_node.run()  # 使用run函数启动控制逻辑
+    waypoint_control_node.run()  
     waypoint_control_node.destroy_node()
     rclpy.shutdown()
 
