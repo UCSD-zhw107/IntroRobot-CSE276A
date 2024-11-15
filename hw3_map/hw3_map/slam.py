@@ -81,6 +81,7 @@ class RobotStateEstimator(Node):
         self.z = None
         self.poses_map_apriltag = []
         self.marker_ids = []
+        self.obserbed_marker = []
 
     def set_current_state(self, current_state):
         self.current_state = current_state
@@ -98,7 +99,6 @@ class RobotStateEstimator(Node):
         zt = np.empty((0,1))
         for index, pose in enumerate(msg.poses):
             tag_id = pose_ids[index]
-            self.marker_ids.append(tag_id)
             pose_camera_apriltag = pose
 
             trans_camera_apriltag = np.array([
@@ -114,7 +114,12 @@ class RobotStateEstimator(Node):
             ])
 
             temp_z = np.append(trans_camera_apriltag[:3],1.).reshape(4,1)
-            zt = np.vstack((zt, temp_z))
+            # New Marker
+            if tag_id not in self.obserbed_marker:
+                self.obserbed_marker.append(tag_id)
+            else:
+                zt = np.vstack((zt, temp_z))
+                self.marker_ids.append(tag_id)
 
             temp_pose_map_apriltag = findAprilTagMap(quat_camera_apriltag, trans_camera_apriltag,self.current_state)
             pose_map_apriltag_t = np.append(temp_pose_map_apriltag[:3],1.).reshape(4,1)
@@ -174,7 +179,7 @@ def main(args=None):
             # No Detection: Only Kalman Predict
             if not found_state:
                 # Kalman Predict
-                kalman_filter.kalmanPredict(update_value)
+                kalman_filter.kalmanPredict(coord(update_value, current_state))
                 # set state
                 current_state = kalman_filter.getPose()
                 robot_state_estimator.set_current_state(current_state)
@@ -182,19 +187,20 @@ def main(args=None):
                 update_value = pid.update(current_state)
                 # publish the twist
                 pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
-                time.sleep(0.05)
+                time.sleep(0.1)
                 continue
 
             # With Detection: Kalman Predict + Kalman Update
-            z, poses_map_apriltag,marker_ids=  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
+            z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
+            # Kalman Predict
+            kalman_filter.kalmanPredict(coord(update_value, current_state))
+
+            # Kalman Update
+            if len(marker_ids) != 0: 
+                kalman_filter.kalmanUpdate(z,marker_ids)
 
             # Add new tag first
             kalman_filter.add_labels_to_state_and_covariance(poses_map_apriltag)
-
-            # Kalman Predict
-            kalman_filter.kalmanPredict(update_value)
-            # Kalman Update
-            kalman_filter.kalmanUpdate(z,marker_ids)
 
             # set state
             current_state = kalman_filter.getPose()
@@ -204,7 +210,7 @@ def main(args=None):
             update_value = pid.update(current_state)
             # publish the twist
             pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
-            time.sleep(0.05)
+            time.sleep(0.1)
         kalman_filter.displayMap()
         st, lt = kalman_filter.getMap()
         print(st)
