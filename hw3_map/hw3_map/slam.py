@@ -182,7 +182,7 @@ def main(args=None):
                 update_value = pid.update(current_state)
                 # publish the twist
                 pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
-                time.sleep(0.05)
+                time.sleep(0.1)
                 continue
 
             # With Detection: Kalman Predict + Kalman Update

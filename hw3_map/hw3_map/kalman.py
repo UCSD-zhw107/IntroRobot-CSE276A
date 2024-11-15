@@ -18,15 +18,15 @@ class KalmanFilter():
         self.F = None
         self.marker_indices = {}
         # Variance for Q
-        # Control Variance
-        self.label_position_variance = 0.0001
         # Label Variance
-        self.control_position_variance = 0.0225
-        self.control_orientation_variance = 0.0609
+        self.label_position_variance = 0.0001
+        # Control Variance
+        self.control_position_variance = 0.0525
+        self.control_orientation_variance = 0.109
         # Covariance
         self.conv_factor = 0.000001
         # Initialize Value for P
-        self.init_label_position_variance = 100
+        self.init_label_position_variance = 1000
         # R Matrix path
         package_share_directory = get_package_share_directory('hw3_map')
         self.r_matrix_path = os.path.join(package_share_directory, 'resource', 'R_matrix.npy')
