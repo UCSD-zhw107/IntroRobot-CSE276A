@@ -9,10 +9,10 @@ setup(
     py_modules=[     
         'hw3_map.mpi_control', 
         'hw3_map.control_node',
-        'hw3_map.slam'
-        'hw3_map.kalman'
-        'hw3_map.pbs'
-        'hw3_map.utils'
+        'hw3_map.slam',
+        'hw3_map.kalman',
+        'hw3_map.pbs',
+        'hw3_map.utils',
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',

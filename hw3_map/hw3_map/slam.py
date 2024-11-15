@@ -149,9 +149,9 @@ def main(args=None):
     rclpy.init(args=args)
     robot_state_estimator = RobotStateEstimator()
     kalman_filter = KalmanFilter()
-    waypoint = np.array([#[0.0,0.0,0.0], 
-                         [1.0,0.0,0.0],
-                         [1.0,2.0,np.pi],
+    waypoint = np.array([[1.5,0.0,0.0], 
+                         [1.5,1.5,np.pi/2],
+                         [0.0,1.5,np.pi],
                          [0.0,0.0,0.0]
                          ])
 
