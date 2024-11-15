@@ -19,12 +19,12 @@ class KalmanFilter():
         self.marker_indices = {}
         # Variance for Q
         # Label Variance
-        self.label_position_variance = 0.5
+        self.label_position_variance = 0.7
         # Control Variance
-        self.control_position_variance = 0.0525
-        self.control_orientation_variance = 0.109
+        self.control_position_variance = 0.0925
+        self.control_orientation_variance = 0.2
         # Covariance
-        self.conv_factor = 0.000001
+        self.conv_factor = 0.001
         # Initialize Value for P
         self.init_label_position_variance = 10000
         # R Matrix path
@@ -71,9 +71,9 @@ class KalmanFilter():
         # Load Measured R for each label
         #R = np.load(self.r_matrix_path)
         R = np.array([
-            [0.1, 0.0, 0.0, 0.0],
-            [0.0, 0.1, 0.0, 0.0],
-            [0.0, 0.0, 0.1, 0.0],
+            [0.04, 0.0, 0.0, 0.0],
+            [0.0, 0.04, 0.0, 0.0],
+            [0.0, 0.0, 0.04, 0.0],
             [0.0, 0.0, 0.0, 0.0]
         ])
         self.R = block_diag(*[R] * num_markers)

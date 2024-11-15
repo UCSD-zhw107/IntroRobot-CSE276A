@@ -179,7 +179,7 @@ def main(args=None):
             # No Detection: Only Kalman Predict
             if not found_state:
                 # Kalman Predict
-                kalman_filter.kalmanPredict(coord(update_value, current_state))
+                kalman_filter.kalmanPredict(update_value)
                 # set state
                 current_state = kalman_filter.getPose()
                 robot_state_estimator.set_current_state(current_state)
@@ -193,11 +193,13 @@ def main(args=None):
             # With Detection: Kalman Predict + Kalman Update
             z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
             # Kalman Predict
-            kalman_filter.kalmanPredict(coord(update_value, current_state))
+            kalman_filter.kalmanPredict(update_value)
+            print(kalman_filter.getPose())
 
             # Kalman Update
             if len(marker_ids) != 0: 
                 kalman_filter.kalmanUpdate(z,marker_ids)
+                print(kalman_filter.getPose())
 
             # Add new tag first
             kalman_filter.add_labels_to_state_and_covariance(poses_map_apriltag)
@@ -213,8 +215,8 @@ def main(args=None):
             time.sleep(0.1)
         kalman_filter.displayMap()
         st, lt = kalman_filter.getMap()
-        print(st)
-        print(lt.diagonal())
+        #print(st)
+        #print(lt.diagonal())
     # stop the car and exit
     pid.publisher_.publish(genTwistMsg(np.array([0.0,0.0,0.0])))
 
