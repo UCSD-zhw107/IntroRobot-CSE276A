@@ -26,7 +26,7 @@ class KalmanFilter():
         # Covariance
         self.conv_factor = 0.000001
         # Initialize Value for P
-        self.init_label_position_variance = 1000
+        self.init_label_position_variance = 10000
         # R Matrix path
         package_share_directory = get_package_share_directory('hw3_map')
         self.r_matrix_path = os.path.join(package_share_directory, 'resource', 'R_matrix.npy')
@@ -69,7 +69,13 @@ class KalmanFilter():
     # Set R Measurement Noise Matrix for Update
     def setR(self, num_markers):
         # Load Measured R for each label
-        R = np.load(self.r_matrix_path)
+        #R = np.load(self.r_matrix_path)
+        R = np.array([
+            [0.1, 0.0, 0.0, 0.0],
+            [0.0, 0.1, 0.0, 0.0],
+            [0.0, 0.0, 0.1, 0.0],
+            [0.0, 0.0, 0.0, 0.0]
+        ])
         self.R = block_diag(*[R] * num_markers)
 
 
@@ -95,26 +101,17 @@ class KalmanFilter():
         # Construct H
         n = self.state.shape[0]
         num_markers = len(marker_ids)
-        row_indices = []
-        col_indices = []
-        data_values = []
+        H = np.zeros((num_markers * 4, n))  # Dense matrix for H
+
         for i, marker_id in enumerate(marker_ids):
             index = self.marker_indices[marker_id]
             row_start = i * 4
             col_start = index
 
-            H_i_nonzero = np.nonzero(H_low)
-            H_i_row_indices = H_i_nonzero[0]
-            H_i_col_indices = H_i_nonzero[1]
-            H_i_data_values = H_low[H_i_row_indices, H_i_col_indices]
+            # Assign values from H_low to the correct block in H
+            H[row_start:row_start + 4, col_start:col_start + 4] = H_low
 
-            row_indices.extend(row_start + H_i_row_indices)
-            col_indices.extend(col_start + H_i_col_indices)
-            data_values.extend(H_i_data_values)
-
-        H_sparse = coo_matrix((data_values, (row_indices, col_indices)), shape=(num_markers * 4, n))
-        H_sparse = H_sparse.tocsr()
-        self.H = H_sparse
+        self.H = H
 
     # Set Q System Model Error Matrix for Prediction
     def setQ(self):
@@ -150,26 +147,29 @@ class KalmanFilter():
         self.state[2, 0] += move_update[2]
 
         # Predict P after movemet
-        self.P = self.F @ self.P @ self.F.T + self.Q
+        self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q
 
     def kalmanUpdate(self, z, marker_ids):
         # Set H, R
         self.setH(marker_ids)
         self.setR(len(marker_ids))
+        #print(f'Z: {z}')
+        #print(f'HS: {np.dot(self.H,self.state)}')
 
         # Compute S
-        self.S = self.H @ self.P @ self.H.transpose() + self.R
+        self.S = np.dot(np.dot(self.H, self.P), self.H.T) + self.R
 
         # Compute K
-        self.K = self.P @ self.H.transpose() @ np.linalg.pinv(self.S)
+        self.K = np.dot(np.dot(self.P, self.H.T), np.linalg.pinv(self.S))
 
         # Compute update state
-        self.state = self.state + self.K @ (z - self.H @ self.state)
+        error = z - np.dot(self.H, self.state)
+        self.state = self.state + np.dot(self.K, error)
 
         # Compute update P
-        KH = self.K @ self.H
-        I = np.eye(KH.shape[0])
-        self.P = (I - KH) @ self.P
+        KH = np.dot(self.K, self.H)
+        prior = np.eye(self.P.shape[0]) - KH
+        self.P = np.dot(prior, self.P)
 
     def displayMap(self):
         robot_pose = self.getPose()

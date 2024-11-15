@@ -149,9 +149,9 @@ def main(args=None):
     rclpy.init(args=args)
     robot_state_estimator = RobotStateEstimator()
     kalman_filter = KalmanFilter()
-    waypoint = np.array([[1.0,0.0,0.0], 
-                         #[1.0,1.0,np.pi/2],
-                         #[0.0,1.0,np.pi],
+    waypoint = np.array([[0.8,0.0,0.0], 
+                         #[0.8,0.8,np.pi/2],
+                         #[0.0,0.8,np.pi],
                          #[0.0,0.0,0.0]
                          ])
 
@@ -182,7 +182,7 @@ def main(args=None):
                 update_value = pid.update(current_state)
                 # publish the twist
                 pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
-                time.sleep(0.1)
+                time.sleep(0.05)
                 continue
 
             # With Detection: Kalman Predict + Kalman Update
@@ -206,6 +206,9 @@ def main(args=None):
             pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
             time.sleep(0.05)
         kalman_filter.displayMap()
+        st, lt = kalman_filter.getMap()
+        print(st)
+        print(lt.diagonal())
     # stop the car and exit
     pid.publisher_.publish(genTwistMsg(np.array([0.0,0.0,0.0])))
 
