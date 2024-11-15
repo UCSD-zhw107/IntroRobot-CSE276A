@@ -171,6 +171,21 @@ class KalmanFilter():
         I = np.eye(KH.shape[0])
         self.P = (I - KH) @ self.P
 
+    def displayMap(self):
+        robot_pose = self.getPose()
+        print('+++++++++++++++++++++++++')
+        print(f'Robot Pose: {robot_pose}')
+        print('+++++++++++++++++++++++++')
+        for i in self.marker_indices.keys():
+            print(f'Tag ID: {i}')
+            entry = self.marker_indices[i]
+            tag_x = self.state[entry]
+            tag_y = self.state[entry + 1]
+            tag_pose = [tag_x, tag_y]
+            print(f'Tag Pose: {tag_pose}')
+            print('+++++++++++++++++++++++++')
+
+
     
 
     

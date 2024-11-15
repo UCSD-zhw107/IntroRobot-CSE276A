@@ -95,10 +95,10 @@ class RobotStateEstimator(Node):
         if len(msg.poses) < 1:
             return
         pose_ids = msg.header.frame_id.split(',')[:-1]
-        self.marker_ids = pose_ids
         zt = np.empty((0,1))
         for index, pose in enumerate(msg.poses):
             tag_id = pose_ids[index]
+            self.marker_ids.append(tag_id)
             pose_camera_apriltag = pose
 
             trans_camera_apriltag = np.array([
@@ -149,10 +149,10 @@ def main(args=None):
     rclpy.init(args=args)
     robot_state_estimator = RobotStateEstimator()
     kalman_filter = KalmanFilter()
-    waypoint = np.array([[1.5,0.0,0.0], 
-                         [1.5,1.5,np.pi/2],
-                         [0.0,1.5,np.pi],
-                         [0.0,0.0,0.0]
+    waypoint = np.array([[1.0,0.0,0.0], 
+                         #[1.0,1.0,np.pi/2],
+                         #[0.0,1.0,np.pi],
+                         #[0.0,0.0,0.0]
                          ])
 
     # init pid controller
@@ -162,8 +162,8 @@ def main(args=None):
     robot_state_estimator.set_current_state(current_state)
     update_value = np.array([0.0, 0.0, 0.0])
     for wp in waypoint:
+        print("move to way point", wp)
         while(np.linalg.norm(pid.getError(current_state, wp)) > 0.12):
-            print("move to way point", wp)
             # set wp as the target point
             pid.setTarget(wp)
 
@@ -205,6 +205,7 @@ def main(args=None):
             # publish the twist
             pid.publisher_.publish(genTwistMsg(coord(update_value, current_state)))
             time.sleep(0.05)
+        kalman_filter.displayMap()
     # stop the car and exit
     pid.publisher_.publish(genTwistMsg(np.array([0.0,0.0,0.0])))
 

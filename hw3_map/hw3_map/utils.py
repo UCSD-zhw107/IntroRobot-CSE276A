@@ -49,6 +49,12 @@ def combine_transformations(R1, t1, R2, t2):
     T1[:3, :3] = R1
     T1[:3, 3] = t1
 
+    T2 = np.eye(4)
+    T2[:3, :3] = R2
+    T2[:3, 3] = t2
+    
+    return np.dot(T1, T2)
+
 
 def findInverse(rot, trans):
     rot_inv = rot.T
