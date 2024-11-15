@@ -27,6 +27,9 @@ class KalmanFilter():
         self.conv_factor = 0.000001
         # Initialize Value for P
         self.init_label_position_variance = 100
+        # R Matrix path
+        package_share_directory = get_package_share_directory('hw3_map')
+        self.r_matrix_path = os.path.join(package_share_directory, 'resource', 'R_matrix.npy')
 
     # Get State and P
     def getMap(self):
@@ -37,25 +40,26 @@ class KalmanFilter():
         xr = self.state[0,0]
         yr = self.state[1,0]
         theta = self.state[2,0]
-        return [xr, yr, theta]
+        return np.array([xr, yr, theta])
     
     # Add new Label to state and P
-    def add_label_to_state_and_covariance(self, marker):
-        marker_id = marker['id']
-        marker_pose = marker['pose']
-        new_state = np.vstack((self.state, marker_pose))
-        
-        n = self.P.shape[0]
-        new_P = np.zeros((n + 4, n + 4))
-        new_P[:n, :n] = self.P 
-        new_P[n, n] = self.init_label_position_variance
-        new_P[n + 1, n + 1] = self.init_label_position_variance
-        new_P[n + 2, n + 2] = self.init_label_position_variance
-        new_P[n + 3, n + 3] = 0.0
+    def add_labels_to_state_and_covariance(self, labels):
+        for marker in labels:
+            marker_id = marker['id']
+            marker_pose = marker['pose']
+            if marker_id in self.marker_indices:
+                continue
+            self.state = np.vstack((self.state, marker_pose))
+            n = self.P.shape[0]
+            new_P = np.zeros((n + 4, n + 4))
+            new_P[:n, :n] = self.P  
+            new_P[n, n] = self.init_label_position_variance
+            new_P[n + 1, n + 1] = self.init_label_position_variance
+            new_P[n + 2, n + 2] = self.init_label_position_variance
+            new_P[n + 3, n + 3] = 0.0  
 
-        self.state = new_state
-        self.P = new_P
-        self.marker_indices[marker_id] = n
+            self.P = new_P
+            self.marker_indices[marker_id] = n
 
     # Set F Matrix for Prediction
     def setF(self):
@@ -65,9 +69,7 @@ class KalmanFilter():
     # Set R Measurement Noise Matrix for Update
     def setR(self, num_markers):
         # Load Measured R for each label
-        package_share_directory = get_package_share_directory('hw3_map')
-        r_matrix_path = os.path.join(package_share_directory, 'resource', 'R_matrix.npy')
-        R = np.load(r_matrix_path)
+        R = np.load(self.r_matrix_path)
         self.R = block_diag(*[R] * num_markers)
 
 
@@ -150,7 +152,7 @@ class KalmanFilter():
         # Predict P after movemet
         self.P = self.F @ self.P @ self.F.T + self.Q
 
-    def KalmanUpdate(self, z, marker_ids):
+    def kalmanUpdate(self, z, marker_ids):
         # Set H, R
         self.setH(marker_ids)
         self.setR(len(marker_ids))

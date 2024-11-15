@@ -119,4 +119,4 @@ def findAprilTagMap(quat_camera_apriltag, trans_camera_apriltag, pose_map_camera
     rot_map_apriltag, trans_map_apriltag = T_map_apriltag[:3, :3], T_map_apriltag[:3, 3]
     #rot_map_apriltag, trans_map_apriltag = projectApriltag(rot_map_apriltag, trans_map_apriltag)
     x,y,z,w = R.from_matrix(rot_map_apriltag).as_quat()
-    return np.array([trans_map_apriltag[0], trans_map_apriltag[1],0,x, y, z, w])
+    return np.array([trans_map_apriltag[0], trans_map_apriltag[1],trans_map_apriltag[2],x, y, z, w])

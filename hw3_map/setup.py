@@ -11,7 +11,7 @@ setup(
         'hw3_map.control_node',
         'hw3_map.slam'
         'hw3_map.kalman'
-        'hw3_map.pds'
+        'hw3_map.pbs'
         'hw3_map.utils'
     ],
     data_files=[
