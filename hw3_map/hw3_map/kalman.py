@@ -19,7 +19,7 @@ class KalmanFilter():
         self.marker_indices = {}
         # Variance for Q
         # Label Variance
-        self.label_position_variance = 0.0001
+        self.label_position_variance = 0.5
         # Control Variance
         self.control_position_variance = 0.0525
         self.control_orientation_variance = 0.109
