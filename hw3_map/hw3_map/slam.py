@@ -179,7 +179,7 @@ def main(args=None):
             # No Detection: Only Kalman Predict
             if not found_state:
                 # Kalman Predict
-                kalman_filter.kalmanPredict(update_value)
+                kalman_filter.kalmanPredict(coord(update_value, current_state))
                 # set state
                 current_state = kalman_filter.getPose()
                 robot_state_estimator.set_current_state(current_state)
@@ -193,7 +193,7 @@ def main(args=None):
             # With Detection: Kalman Predict + Kalman Update
             z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
             # Kalman Predict
-            kalman_filter.kalmanPredict(update_value)
+            kalman_filter.kalmanPredict(coord(update_value, current_state))
             print(kalman_filter.getPose())
 
             # Kalman Update
