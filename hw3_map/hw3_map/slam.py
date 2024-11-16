@@ -155,7 +155,7 @@ def main(args=None):
     robot_state_estimator = RobotStateEstimator()
     kalman_filter = KalmanFilter()
     waypoint = np.array([[0.8,0.0,0.0], 
-                         #[0.8,0.8,np.pi/2],
+                         [0.8,0.8,np.pi/2],
                          #[0.0,0.8,np.pi],
                          #[0.0,0.0,0.0]
                          ])
@@ -168,7 +168,7 @@ def main(args=None):
     update_value = np.array([0.0, 0.0, 0.0])
     for wp in waypoint:
         print("move to way point", wp)
-        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.12):
+        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.1):
             # set wp as the target point
             pid.setTarget(wp)
 
@@ -179,7 +179,7 @@ def main(args=None):
             # No Detection: Only Kalman Predict
             if not found_state:
                 # Kalman Predict
-                kalman_filter.kalmanPredict(coord(update_value, current_state))
+                kalman_filter.kalmanPredict(coord(update_value, current_state)*1.2)
                 # set state
                 current_state = kalman_filter.getPose()
                 robot_state_estimator.set_current_state(current_state)
@@ -193,7 +193,7 @@ def main(args=None):
             # With Detection: Kalman Predict + Kalman Update
             z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
             # Kalman Predict
-            kalman_filter.kalmanPredict(coord(update_value, current_state))
+            kalman_filter.kalmanPredict(coord(update_value, current_state)*1.2)
             print(kalman_filter.getPose())
 
             # Kalman Update
