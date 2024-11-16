@@ -21,8 +21,9 @@ class KalmanFilter():
         # Label Variance
         self.label_position_variance = 0.5
         # Control Variance
-        self.control_position_variance = 0.0525
-        self.control_orientation_variance = 0.109
+        self.control_position_variance_x = 0.0525
+        self.control_position_variance_y = 0.1
+        self.control_orientation_variance = 0.209
         # Covariance
         self.conv_factor = 0.00001
         # Initialize Value for P
@@ -118,8 +119,8 @@ class KalmanFilter():
         n = len(self.state)
         self.Q = np.zeros((n, n))
         # Control Variance
-        self.Q[0, 0] = self.control_position_variance
-        self.Q[1, 1] = self.control_position_variance
+        self.Q[0, 0] = self.control_position_variance_x
+        self.Q[1, 1] = self.control_position_variance_y
         self.Q[2, 2] = self.control_orientation_variance
         # Label Variance
         for i in range(3, n, 4): 
