@@ -10,7 +10,7 @@ from rclpy.time import Duration
 import math
 from math import copysign, fabs, sqrt, pi, sin, cos, asin, acos, atan2, exp, log
 from hw3_map.kalman import KalmanFilter
-from hw3_map.utils import combine_transformations, findAprilTagMap, findInverse
+from hw3_map.utils import combine_transformations, findAprilTagMap, findInverse,findRobotMap
 
 class PIDcontroller(Node):
     def __init__(self, Kp, Ki, Kd):
@@ -22,7 +22,7 @@ class PIDcontroller(Node):
         self.I = np.array([0.0,0.0,0.0])
         self.lastError = np.array([0.0,0.0,0.0])
         self.timestep = 0.1
-        self.maximumValue = 0.05
+        self.maximumValue = 0.02
         self.publisher_ = self.create_publisher(Twist, '/twist', 10)
 
     def setTarget(self, target):
@@ -82,6 +82,11 @@ class RobotStateEstimator(Node):
         self.poses_map_apriltag = []
         self.marker_ids = []
         self.obserbed_marker = []
+        self.apriltag_world_poses = {
+            'marker_2': (1.7, 0.85, 0.0, 0.5, -0.5, 0.5, -0.5), # (x,y,z, qual_x, qual_y, qual_z, qual_w)
+            'marker_4': (-0.9, 0.85, 0.0, -0.5, -0.5, 0.5, 0.5),
+        }
+        self.known = None
 
     def set_current_state(self, current_state):
         self.current_state = current_state
@@ -92,6 +97,7 @@ class RobotStateEstimator(Node):
         self.z = None
         self.poses_map_apriltag = []
         self.marker_ids = []
+        self.known = None
         #self.get_logger().info(f"Received PoseArray with {len(msg.poses)} poses")
         if len(msg.poses) < 1:
             return
@@ -120,6 +126,13 @@ class RobotStateEstimator(Node):
             else:
                 zt = np.vstack((zt, temp_z))
                 self.marker_ids.append(tag_id)
+            
+            if tag_id == 'marker_2' or tag_id == 'marker_4':
+                pose_map_marker = self.apriltag_world_poses[tag_id]
+                self.known = findRobotMap(quat_camera_apriltag, trans_camera_apriltag, pose_map_marker)
+
+
+
 
             temp_pose_map_apriltag = findAprilTagMap(quat_camera_apriltag, trans_camera_apriltag,self.current_state)
             pose_map_apriltag_t = np.append(temp_pose_map_apriltag[:3],1.).reshape(4,1)
@@ -166,12 +179,13 @@ def main(args=None):
     current_state = kalman_filter.getPose()
     robot_state_estimator.set_current_state(current_state)
     update_value = np.array([0.0, 0.0, 0.0])
+    all_state = []
     for wp in waypoint:
         print("move to way point", wp)
-        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.1):
+        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.12):
             # set wp as the target point
             pid.setTarget(wp)
-
+            all_state.append(current_state)
             # Detect tag
             rclpy.spin_once(robot_state_estimator)
             found_state = robot_state_estimator.pose_updated
@@ -192,8 +206,12 @@ def main(args=None):
 
             # With Detection: Kalman Predict + Kalman Update
             z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
+            kn = robot_state_estimator.known
             # Kalman Predict
             kalman_filter.kalmanPredict(update_value)
+
+            if kn is not None:
+                kalman_filter.setPose(kn)
 
             # Kalman Update
             if len(marker_ids) != 0: 
@@ -214,6 +232,7 @@ def main(args=None):
         kalman_filter.displayMap()
         final_state, final_map = kalman_filter.getMap()
         np.save('final_map.npy', final_map)
+        np.save('all_state.npy', all_state)
     # stop the car and exit
     pid.publisher_.publish(genTwistMsg(np.array([0.0,0.0,0.0])))
 

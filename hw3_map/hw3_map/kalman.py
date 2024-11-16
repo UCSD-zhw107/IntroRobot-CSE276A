@@ -27,7 +27,7 @@ class KalmanFilter():
         # Covariance
         self.conv_factor = 0.00001
         # Initialize Value for P
-        self.init_label_position_variance = 10000
+        self.init_label_position_variance = 3.0
         # R Matrix path
         package_share_directory = get_package_share_directory('hw3_map')
         self.r_matrix_path = os.path.join(package_share_directory, 'resource', 'R_matrix.npy')
@@ -42,6 +42,11 @@ class KalmanFilter():
         yr = self.state[1,0]
         theta = self.state[2,0]
         return np.array([xr, yr, theta])
+    
+    def setPose(self, pose):
+        self.state[0,0] = pose[0]
+        self.state[1,0] = pose[1]
+        self.state[2,0] = pose[2]
     
     # Add new Label to state and P
     def add_labels_to_state_and_covariance(self, labels):
@@ -124,16 +129,10 @@ class KalmanFilter():
         self.Q[2, 2] = self.control_orientation_variance
         # Label Variance
         for i in range(3, n, 4): 
-            self.Q[i, i] = self.label_position_variance        
-            self.Q[i + 1, i + 1] = self.label_position_variance  
-            self.Q[i + 2, i + 2] = self.label_position_variance  
-            self.Q[i + 3, i + 3] = 0  
-
-            # Covariance
-            self.Q[0, i] = self.conv_factor
-            self.Q[i, 0] = self.conv_factor
-            self.Q[1, i + 1] = self.conv_factor
-            self.Q[i + 1, 1] = self.conv_factor
+            self.Q[i, i] = 0.0        
+            self.Q[i + 1, i + 1] = 0.0  
+            self.Q[i + 2, i + 2] = 0.0  
+            self.Q[i + 3, i + 3] = 0.0
     
     # Kalman Prediction
     def kalmanPredict(self, move_update):
