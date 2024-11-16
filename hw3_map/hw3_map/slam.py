@@ -22,7 +22,7 @@ class PIDcontroller(Node):
         self.I = np.array([0.0,0.0,0.0])
         self.lastError = np.array([0.0,0.0,0.0])
         self.timestep = 0.1
-        self.maximumValue = 0.02
+        self.maximumValue = 0.03
         self.publisher_ = self.create_publisher(Twist, '/twist', 10)
 
     def setTarget(self, target):
@@ -169,7 +169,7 @@ def main(args=None):
     kalman_filter = KalmanFilter()
     waypoint = np.array([[0.8,0.0,0.0], 
                          [0.8,0.8,np.pi/2],
-                         [0.0,0.8,np.pi],
+                         [0.0,0.8,-np.pi/2],
                          [0.0,0.0,0.0]
                          ])
 
@@ -208,14 +208,19 @@ def main(args=None):
             z, poses_map_apriltag, marker_ids =  robot_state_estimator.z, robot_state_estimator.poses_map_apriltag, robot_state_estimator.marker_ids
             kn = robot_state_estimator.known
             # Kalman Predict
-            kalman_filter.kalmanPredict(update_value)
+            #kalman_filter.kalmanPredict(update_value)
 
             if kn is not None:
                 kalman_filter.setPose(kn)
+            else:
+                kalman_filter.kalmanPredict(update_value)
 
             # Kalman Update
             if len(marker_ids) != 0: 
                 kalman_filter.kalmanUpdate(z,marker_ids)
+
+            if kn is not None:
+                kalman_filter.setPose(kn)
 
             # Add new tag first
             kalman_filter.add_labels_to_state_and_covariance(poses_map_apriltag)
