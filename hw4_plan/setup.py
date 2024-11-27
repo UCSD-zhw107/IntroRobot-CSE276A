@@ -6,6 +6,13 @@ setup(
     name=package_name,
     version='0.0.0',
     packages=[package_name],
+    py_modules=[     
+        'hw4_plan.mpi_control', 
+        'hw4_plan.mpi_twist_control_node',
+        'hw4_plan.pbs',
+        'hw4_plan.visibility',
+        'hw4_plan.voronoi',
+    ],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -20,7 +27,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pbs = hw4_plan.pbs:main'
+            'pbs = hw4_plan.pbs:main',
+            'mpi_twist_control_node = hw4_plan.mpi_twist_control_node:main'
         ],
     },
 )

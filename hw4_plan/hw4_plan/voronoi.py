@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon, Point, LineString
 import heapq
@@ -112,42 +111,6 @@ class voronoi_planner():
             return np.vstack((left_path[:-1], right_path))
         else:
             return np.array([start, end])
-
-    def plot_voronoi(self, voronoi, path=None, obstacle_coords=None, boundary_coords=None):
-
-        vertices = voronoi['vertices']
-        edges = voronoi['edges']
-        plt.figure(figsize=(8, 8))
-
-
-        for edge in edges:
-            p1, p2 = vertices[edge[0]], vertices[edge[1]]
-            plt.plot([p1[0], p2[0]], [p1[1], p2[1]], color='gray', linestyle='-',
-                     label='Filtered Edges' if edge[0] == edges[0][0] else None)
-
-
-        if obstacle_coords is not None:
-            plt.plot(obstacle_coords[:, 0], obstacle_coords[:, 1], color='red', label='Obstacle', linewidth=2)
-
-
-        if boundary_coords is not None:
-            plt.plot(boundary_coords[:, 0], boundary_coords[:, 1], color='green', label='Boundary', linewidth=2)
-
-        if path is not None:
-            start = path['start']
-            goal = path['goal']
-            path_coords = path['path']
-            plt.plot(path_coords[:, 0], path_coords[:, 1], color='red', label='Path', linewidth=2)
-            plt.scatter([start[0]], [start[1]], color='blue', label='Start')
-            plt.scatter([goal[0]], [goal[1]], color='blue', label='Goal')
-
-
-        plt.legend()
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('Filtered Voronoi Diagram')
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
 
     def calculate_path_orientations(self, waypoints):
         orientations = []

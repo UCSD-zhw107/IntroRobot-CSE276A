@@ -9,6 +9,8 @@ from tf2_ros import Buffer, TransformBroadcaster, TransformListener
 from rclpy.time import Duration
 import math
 from math import copysign, fabs, sqrt, pi, sin, cos, asin, acos, atan2, exp, log
+from hw4_plan.voronoi import voronoi_planner
+from hw4_plan.visibility import visibility_planner
 
 
 EPSILON = 1e-0 # threshold for computing quaternion from rotation matrix
@@ -249,13 +251,17 @@ class RobotStateEstimator(Node):
 
         # if you are not using tf2 service, define your aptiltag poses (wrt map frame) here, z value is omitted to ensure 2D transformation
         self.apriltag_world_poses = {
+            # 0
             'marker_5': (1.7, 0.0, 0.0, 0.5, -0.5, 0.5, -0.5),
-            'marker_2': (1.7, 0.0, 0.0, 0.5, -0.5, 0.5, -0.5),
+            'marker_2': (1.7, 0.8, 0.0, 0.5, -0.5, 0.5, -0.5),
+
+            # -pi
             'marker_3': (-0.9, 0.0, 0.0, -0.5, -0.5, 0.5, 0.5),
             'marker_4': (-0.9, 0.8, 0.0, -0.5, -0.5, 0.5, 0.5),
-            'marker_1': (0.36, 0.67, 0.0, -0.5, 0.5, -0.5, -0.5),
-            'marker_9': (0.0, 1.7, 0.0, -0.5, 0.5, -0.5, -0.5),
-            'marker_8': (0.64, 1.7, 0.0, -0.5, 0.5, -0.5, -0.5),
+            # -pi/2 -0.5, 0.5, -0.5, -0.5
+            'marker_1': (0.36, 0.67, 0.0, 0.5, -0.5, 0.5, 0.5),
+            'marker_9': (0.0, 1.7, 0.0, 0.5, -0.5, 0.5, 0.5),
+            'marker_8': (0.64, 1.7, 0.0, 0.5, -0.5, 0.5, 0.5),
         }
 
 
@@ -268,6 +274,11 @@ class RobotStateEstimator(Node):
         pose_ids = msg.header.frame_id.split(',')[:-1]
         
         # we will only use one landmark at a time in homework 2. in homework 3, all landmarks should be considered.
+        '''excluded_ids = ['marker_1', 'marker_9', 'marker_8']
+        tag_id = next((marker for marker in pose_ids if marker not in excluded_ids), None)
+        if tag_id == None:
+            return
+        print(f'Tag:{tag_id}')'''
         tag_id = pose_ids[0]
         pose_camera_apriltag = msg.poses[0]   # syntax: pose_ReferenceFrame_TargetFrame
         trans_camera_apriltag = np.array([
@@ -287,11 +298,12 @@ class RobotStateEstimator(Node):
         trans_camera_apriltag_2d = trans_camera_apriltag
         trans_camera_apriltag_2d[1] = 0.0
 
-        rot_camera_apriltag_2d = np.array([
+        '''rot_camera_apriltag_2d = np.array([
             [rot_camera_apriltag[0,0], 0.0, rot_camera_apriltag[2,0]],
             [0.0, 1.0, 0.0],
             [rot_camera_apriltag[2,0], 0.0, rot_camera_apriltag[0,0]],
-        ])
+        ])'''
+        rot_camera_apriltag_2d = rot_camera_apriltag
 
         rot_apriltag_camera_2d = rot_camera_apriltag_2d.T
         trans_apriltag_camera_2d = -np.dot(rot_apriltag_camera_2d, trans_camera_apriltag_2d)
@@ -336,11 +348,28 @@ def coord(twist, current_state):
 def main(args=None):
     rclpy.init(args=args)
     robot_state_estimator = RobotStateEstimator()
-    waypoint = np.array([#[0.0,0.0,0.0], 
+
+    start_point = [0, 0]
+    goal_point = [0.9, 1.37]
+    obstacle = np.array([[0.19, 0.67],
+                         [0.53, 0.67],
+                         [0.53, 0.93],
+                         [0.19, 0.93]])
+    boundary = np.array([
+        [1.7, -0.74],
+        [-0.9, -0.74],
+        [-0.9, 1.7],
+        [1.7, 1.7]
+    ])
+    #v = voronoi_planner(obstacle, boundary,start_point, goal_point)
+    v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
+    waypoint = v.plan_path()[1:]
+    print(f'WayPoint: {waypoint}')
+    '''waypoint = np.array([#[0.0,0.0,0.0], 
                          [1.0,0.0,0.0],
-                         [1.0,2.0,np.pi],
-                         [0.0,0.0,0.0]
-                         ])
+                         #[1.0,2.0,np.pi],
+                         #[0.0,0.0,0.0]
+                         ])'''
 
     # init pid controller
     #0.034,0.005,0.005
@@ -366,7 +395,7 @@ def main(args=None):
             current_state = estimated_state
             print(f'Current: {estimated_state}')
         while(np.linalg.norm(pid.getError(current_state, wp)) > 0.12): # check the error between current state and current way point
-            print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
+            #print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
             # calculate the current twist
             update_value = pid.update(current_state)
             # publish the twist

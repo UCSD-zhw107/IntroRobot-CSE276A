@@ -6,7 +6,7 @@ import rclpy # replaces rospy
 from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
-from mpi_control import MegaPiController
+from hw4_plan.mpi_control import MegaPiController
 import numpy as np
 
 
@@ -113,8 +113,8 @@ class MegaPiControllerNode(Node):
 
         
 
-if __name__ == "__main__":
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     mpi_ctrl_node = MegaPiControllerNode()
     mpi_ctrl_node.get_wheel_regressions()
     #rospy.init_node('megapi_controller')
@@ -126,3 +126,7 @@ if __name__ == "__main__":
     # Destroy node and shutdown when done. (Optional, as node would be cleaned up by garbage collection)
     mpi_ctrl_node.destroy_node()
     rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
