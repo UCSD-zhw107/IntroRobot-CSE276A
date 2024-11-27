@@ -258,10 +258,10 @@ class RobotStateEstimator(Node):
             # -pi
             'marker_3': (-0.9, 0.0, 0.0, -0.5, -0.5, 0.5, 0.5),
             'marker_4': (-0.9, 0.8, 0.0, -0.5, -0.5, 0.5, 0.5),
-            # -pi/2 -0.5, 0.5, -0.5, -0.5
+            # -pi/2 -0.5, 0.5, 0.5, 0.5
             'marker_1': (0.36, 0.67, 0.0, -0.5, 0.5, 0.5, 0.5),
             'marker_9': (0.0, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
-            'marker_8': (1.27, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
+            'marker_8': (0.64, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
         }
 
 
@@ -274,11 +274,7 @@ class RobotStateEstimator(Node):
         pose_ids = msg.header.frame_id.split(',')[:-1]
         
         # we will only use one landmark at a time in homework 2. in homework 3, all landmarks should be considered.
-        '''excluded_ids = ['marker_1', 'marker_9', 'marker_8']
-        tag_id = next((marker for marker in pose_ids if marker not in excluded_ids), None)
-        if tag_id == None:
-            return
-        print(f'Tag:{tag_id}')'''
+        
         tag_id = pose_ids[0]
         pose_camera_apriltag = msg.poses[0]   # syntax: pose_ReferenceFrame_TargetFrame
         trans_camera_apriltag = np.array([
@@ -298,11 +294,7 @@ class RobotStateEstimator(Node):
         trans_camera_apriltag_2d = trans_camera_apriltag
         trans_camera_apriltag_2d[1] = 0.0
 
-        '''rot_camera_apriltag_2d = np.array([
-            [rot_camera_apriltag[0,0], 0.0, rot_camera_apriltag[2,0]],
-            [0.0, 1.0, 0.0],
-            [rot_camera_apriltag[2,0], 0.0, rot_camera_apriltag[0,0]],
-        ])'''
+        
         rot_camera_apriltag_2d = rot_camera_apriltag
 
         rot_apriltag_camera_2d = rot_camera_apriltag_2d.T
@@ -361,8 +353,8 @@ def main(args=None):
         [-0.9, 1.7],
         [1.7, 1.7]
     ])
-    v = voronoi_planner(obstacle, boundary,start_point, goal_point)
-    #v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
+    #v = voronoi_planner(obstacle, boundary,start_point, goal_point)
+    v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
     waypoint = v.plan_path()[1:]
     print(f'WayPoint: {waypoint}')
 
@@ -370,6 +362,7 @@ def main(args=None):
     #0.034,0.005,0.005
     pid = PIDcontroller(0.034,0.005,0.005)
     current_state = robot_state_estimator.current_state
+    trajectory = []
 
     for wp in waypoint:
         print("move to way point", wp)
@@ -403,6 +396,9 @@ def main(args=None):
             found_state, estimated_state = robot_state_estimator.pose_updated, robot_state_estimator.current_state
             if found_state: # if the tag is detected, we can use it to update current state.
                 current_state = estimated_state
+                trajectory.append(current_state)
+        np.save('trajct.npy', np.asanyarray(trajectory))
+        print(np.asanyarray(trajectory))
     # stop the car and exit
     pid.publisher_.publish(genTwistMsg(np.array([0.0,0.0,0.0])))
 
