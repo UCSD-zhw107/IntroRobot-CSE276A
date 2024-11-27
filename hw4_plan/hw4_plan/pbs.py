@@ -261,7 +261,7 @@ class RobotStateEstimator(Node):
             # -pi/2 -0.5, 0.5, -0.5, -0.5
             'marker_1': (0.36, 0.67, 0.0, -0.5, 0.5, 0.5, 0.5),
             'marker_9': (0.0, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
-            'marker_8': (0.64, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
+            'marker_8': (1.27, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
         }
 
 
@@ -361,8 +361,8 @@ def main(args=None):
         [-0.9, 1.7],
         [1.7, 1.7]
     ])
-    #v = voronoi_planner(obstacle, boundary,start_point, goal_point)
-    v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
+    v = voronoi_planner(obstacle, boundary,start_point, goal_point)
+    #v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
     waypoint = v.plan_path()[1:]
     print(f'WayPoint: {waypoint}')
 
@@ -390,7 +390,7 @@ def main(args=None):
             current_state = estimated_state
             print(f'Current: {estimated_state}')
         while(np.linalg.norm(pid.getError(current_state, wp)) > 0.3): # check the error between current state and current way point
-            print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
+            #print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
             # calculate the current twist
             update_value = pid.update(current_state)
             # publish the twist
