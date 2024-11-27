@@ -259,9 +259,9 @@ class RobotStateEstimator(Node):
             'marker_3': (-0.9, 0.0, 0.0, -0.5, -0.5, 0.5, 0.5),
             'marker_4': (-0.9, 0.8, 0.0, -0.5, -0.5, 0.5, 0.5),
             # -pi/2 -0.5, 0.5, -0.5, -0.5
-            'marker_1': (0.36, 0.67, 0.0, 0.5, -0.5, 0.5, 0.5),
-            'marker_9': (0.0, 1.7, 0.0, 0.5, -0.5, 0.5, 0.5),
-            'marker_8': (0.64, 1.7, 0.0, 0.5, -0.5, 0.5, 0.5),
+            'marker_1': (0.36, 0.67, 0.0, -0.5, 0.5, 0.5, 0.5),
+            'marker_9': (0.0, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
+            'marker_8': (0.64, 1.7, 0.0, -0.5, 0.5, 0.5, 0.5),
         }
 
 
@@ -365,11 +365,6 @@ def main(args=None):
     v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
     waypoint = v.plan_path()[1:]
     print(f'WayPoint: {waypoint}')
-    '''waypoint = np.array([#[0.0,0.0,0.0], 
-                         [1.0,0.0,0.0],
-                         #[1.0,2.0,np.pi],
-                         #[0.0,0.0,0.0]
-                         ])'''
 
     # init pid controller
     #0.034,0.005,0.005
@@ -394,8 +389,8 @@ def main(args=None):
         if found_state: # if the tag is detected, we can use it to update current state.
             current_state = estimated_state
             print(f'Current: {estimated_state}')
-        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.12): # check the error between current state and current way point
-            #print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
+        while(np.linalg.norm(pid.getError(current_state, wp)) > 0.3): # check the error between current state and current way point
+            print(f'Error: {np.linalg.norm(pid.getError(current_state, wp))}')
             # calculate the current twist
             update_value = pid.update(current_state)
             # publish the twist
