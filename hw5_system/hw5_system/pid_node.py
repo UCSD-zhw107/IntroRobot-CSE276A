@@ -148,6 +148,7 @@ class PIDcontroller(Node):
             pose.y = current_state_copy[1]
             pose.theta = current_state_copy[2]
             self.pose_pub.publish(pose)
+            print(f'POSE: {current_state_copy}')
         # Keep current task
         else:
             update_value = self.update(current_state_copy)

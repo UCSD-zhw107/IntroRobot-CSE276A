@@ -9,7 +9,7 @@ from math import copysign, fabs, sqrt, pi, sin, cos, asin, acos, atan2, exp, log
 class RobotPlanner(Node):
     def __init__(self):
         super().__init__('robot_planner')
-        self.radius = 0.13
+        self.radius = 0.5
         self.boundary = np.array([-0.9, 1.7])
         self.subscription = self.create_subscription(
             Pose2D,
@@ -21,9 +21,9 @@ class RobotPlanner(Node):
     
     def is_near_boundary(self, val):
         lower_bound, upper_bound = self.boundary
-        if abs(val - lower_bound) < self.radius:
+        if abs(val - lower_bound - self.radius) < 0.2:
             return True
-        if abs(val - upper_bound) < self.radius:
+        if abs(val - upper_bound + self.radius) < 0.2:
             return True
         return False
     
@@ -43,7 +43,7 @@ class RobotPlanner(Node):
             return
 
         # Turn Around
-        if self.is_near_boundary(robot_x):
+        if self.is_near_boundary(robot_x) and (robot_theta < 1.4 or robot_theta > 1.7):
             target_msg = Pose2D()
             target_msg.x = robot_x
             target_msg.y = robot_y + self.turn_increment
