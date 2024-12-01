@@ -21,7 +21,7 @@ class PIDcontroller(Node):
         self.I = np.array([0.0,0.0,0.0])
         self.lastError = np.array([0.0,0.0,0.0])
         self.timestep = 0.1
-        self.maximumValue = 0.03
+        self.maximumValue = 0.04
         self.publisher_ = self.create_publisher(Twist, '/twist', 10)
 
     def setTarget(self, target):
@@ -195,6 +195,10 @@ def main(args=None):
     ])'''
     
     waypoint = np.array([
+        [1.2, -0.4, 0],
+        [1.2, -0.2, np.pi/2],
+        [-0.4, -0.2, np.pi],
+        [-0.4, 0.0, np.pi/2],
         [1.2, 0 ,0],
         [1.2, 0.2, np.pi/2],
         [-0.4, 0.2, np.pi],
