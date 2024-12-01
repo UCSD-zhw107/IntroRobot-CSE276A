@@ -47,15 +47,15 @@ class RobotPlanner(Node):
             target_msg = Pose2D()
             target_msg.x = robot_x
             target_msg.y = robot_y + self.turn_increment
-            target_msg.theta = np.pi/2
+            target_msg.theta = float(np.pi)/2
             self.task_publisher.publish(target_msg)
             return
         
         # Move forward
         target_msg = Pose2D()
-        target_msg.x = upper_bound-self.radius if robot_x < 0 else lower_bound + self.radius
+        target_msg.x = upper_bound-self.radius if robot_x < 0.5 else lower_bound + self.radius
         target_msg.y = robot_y
-        target_msg.theta = 0 if robot_x < 0 else np.pi
+        target_msg.theta = 0.0 if robot_x < 0.5 else float(np.pi)
         self.task_publisher.publish(target_msg)
 
 def main(args=None):

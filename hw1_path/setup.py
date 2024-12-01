@@ -8,7 +8,10 @@ setup(
     packages=[package_name],
     py_modules=[
         'hw1_path.path_sender',      
-        'hw1_path.key_parser', 
+        'hw1_path.key_parser',
+        'hw1_path.mpi_control',
+        'hw1_path.twist_node',
+        'hw1_path.control' 
     ],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -26,7 +29,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'path_sender = hw1_path.path_sender:main'
+            'path_sender = hw1_path.path_sender:main',
+            'twist_node = hw1_path.twist_node:main',
+            'control = hw1_path.control:main'
         ],
     },
 )

@@ -2,6 +2,7 @@
 """ MegaPi Controller ROS2 Wrapper"""
 #import rospy
 import math
+from typing import List
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -9,7 +10,7 @@ from geometry_msgs.msg import Twist, TransformStamped, PoseArray,Pose2D
 from threading import Lock
 
 class PIDcontroller(Node):
-    def __init__(self, Kp, Ki, Kd):
+    def __init__(self, Kp, Ki, Kd, waypoints: List[np.ndarray]):
         super().__init__('PID_Controller_NodePub')
         self.Kp = Kp
         self.Ki = Ki
@@ -37,6 +38,7 @@ class PIDcontroller(Node):
         self.current_state = np.array([0.0, 0.0, 0.0])
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.lock = Lock()
+        self.waypoints = waypoints
         
     def genTwistMsg(self,desired_twist):
         """
@@ -52,7 +54,7 @@ class PIDcontroller(Node):
         return twist_msg
 
 
-    def coord(self, twist, current_state):
+    def coord(self,twist, current_state):
         J = np.array([[np.cos(current_state[2]), np.sin(current_state[2]), 0.0],
                     [-np.sin(current_state[2]), np.cos(current_state[2]), 0.0],
                     [0.0,0.0,1.0]])
@@ -125,31 +127,24 @@ class PIDcontroller(Node):
             self.publisher.publish(twist)
             raise SystemExit
         self.setTarget([msg.x, msg.y, msg.theta])
-        print(self.target)
     
     def timer_callback(self):
+        if len(self.waypoints) == 0:
+            twist = Twist()
+            twist.linear.x = 0.0
+            twist.linear.y = 0.0
+            twist.angular.z = 0.0
+            self.publisher.publish(twist)
+            raise SystemExit
         try:
             self.lock.acquire()
             current_state_copy = self.current_state.copy()
         finally:
             self.lock.release()
-        if self.target is None:
-            pose = Pose2D()
-            pose.x = current_state_copy[0]
-            pose.y = current_state_copy[1]
-            pose.theta = current_state_copy[2]
-            self.pose_pub.publish(pose)
-            return
-
-        # Move to next plan
-        if np.linalg.norm(self.getError(current_state_copy, self.target)) < 0.2:
-            pose = Pose2D()
-            pose.x = current_state_copy[0]
-            pose.y = current_state_copy[1]
-            pose.theta = current_state_copy[2]
-            self.pose_pub.publish(pose)
-        # Keep current task
+        if self.target is None or np.linalg.norm(self.getError(current_state_copy, self.target)) < 0.2:
+            self.setTarget(self.waypoints.pop(0))
         else:
+            print(self.target)
             update_value = self.update(current_state_copy)
             self.publisher.publish(self.genTwistMsg(self.coord(update_value, current_state_copy)))
             try:
@@ -161,7 +156,18 @@ class PIDcontroller(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = PIDcontroller(0.034,0.005,0.005)
+    waypoints_square = [
+        np.array([1.0, 0.0, 0.0]),
+        #np.array([1.0, 0.0, np.pi/2]),
+        np.array([1.0, 1.0, np.pi/2]),
+        #np.array([1.0, 1.0, np.pi]),
+        np.array([0.0, 1.0, np.pi]),
+        #np.array([0.0, 1.0, -np.pi/2]),
+        np.array([0.0, 0.0, -np.pi/2]),
+        np.array([0.0, 0.0, 0.0])
+    ]
+
+    node = PIDcontroller(0.1,0.01,0.000, waypoints=waypoints_square)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
@@ -169,5 +175,10 @@ def main(args=None):
     except SystemExit:
         node.get_logger().info('Finished Job. Shutting down...')
     finally:
+        twist = Twist()
+        twist.linear.x = 0.0
+        twist.linear.y = 0.0
+        twist.angular.z = 0.0
+        node.publisher.publish(twist)
         node.destroy_node()
         rclpy.shutdown()

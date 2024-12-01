@@ -8,19 +8,18 @@ import os
 def generate_launch_description():
     return LaunchDescription([
 
-        # PID node
+        # Pose Estimator
         Node(
             package='hw5_system',
-            executable='pid_node',
-            name='pid_node',
-            output='log'
+            executable='pose_estimate_node',
+            name='pose_estimate_node',
         ),
 
         # Mpi twist
         Node(
             package='hw5_system',
-            executable='twist_node',
-            name='twist_node',
+            executable='twist_send',
+            name='twist_send',
         ),
         
         # Planner
@@ -30,11 +29,12 @@ def generate_launch_description():
             name='plan_node',
         ),
 
-        # Pose Estimator
+        # PID node
         Node(
             package='hw5_system',
-            executable='pose_estimate_node',
-            name='pose_estimate_node',
+            executable='pid_node',
+            name='pid_node',
+            output='screen'
         ),
 
     ])
