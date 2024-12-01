@@ -186,18 +186,34 @@ def main(args=None):
     #v = voronoi_planner(obstacle, boundary,start_point, goal_point)
     #v = visibility_planner(obstacle, boundary,start_point, goal_point, radius=0.13)
     #waypoint = v.plan_path()[1:]
-    waypoint = np.array([
+    '''waypoint = np.array([
         [1, 0 ,0],
         [1, 0.2, np.pi/2],
         [0, 0.2, np.pi],
         [0, 0.4, np.pi/2],
         [1, 0.4, 0]
+    ])'''
+    
+    waypoint = np.array([
+        [1.2, 0 ,0],
+        [1.2, 0.2, np.pi/2],
+        [-0.4, 0.2, np.pi],
+        [-0.4, 0.4, np.pi/2],
+        [1.2, 0.4, 0],
+        [1.2, 0.6, np.pi/2],
+        [-0.4, 0.6, np.pi],
+        [-0.4, 0.8, np.pi/2],
+        [1.2, 0.8, 0],
+        [1.2, 1.0, np.pi/2],
+        [-0.4, 1.0, np.pi],
     ])
+    
+    
     print(f'WayPoint: {waypoint}')
 
     # init pid controller
     #0.034,0.005,0.005
-    pid = PIDcontroller(0.034,0.005,0.005)
+    pid = PIDcontroller(0.04,0.005,0.005)
     current_state = robot_state_estimator.current_state
     trajectory = []
 
