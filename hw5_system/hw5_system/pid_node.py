@@ -37,6 +37,7 @@ class PIDcontroller(Node):
         self.current_state = np.array([0.0, 0.0, 0.0])
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.lock = Lock()
+        self.trajectory = []
         
     def genTwistMsg(self,desired_twist):
         """
@@ -131,6 +132,7 @@ class PIDcontroller(Node):
         try:
             self.lock.acquire()
             current_state_copy = self.current_state.copy()
+            self.trajectory.append(current_state_copy)
         finally:
             self.lock.release()
         if self.target is None:
@@ -149,6 +151,7 @@ class PIDcontroller(Node):
             pose.theta = current_state_copy[2]
             self.pose_pub.publish(pose)
             print(f'POSE: {current_state_copy}')
+            np.save('trajct.npy', np.asanyarray(self.trajectory))
         # Keep current task
         else:
             update_value = self.update(current_state_copy)
@@ -162,7 +165,7 @@ class PIDcontroller(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = PIDcontroller(0.034,0.005,0.005)
+    node = PIDcontroller(0.04,0.005,0.005)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

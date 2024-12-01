@@ -19,6 +19,7 @@ class RobotPlanner(Node):
         self.task_publisher = self.create_publisher(Pose2D, '/planned_target', 10)
         self.turn_increment = 0.2
         self.just_turned = False
+        self.total_turn_increment = 0.0
     
     def is_near_boundary(self, val):
         lower_bound, upper_bound = self.boundary
@@ -45,10 +46,11 @@ class RobotPlanner(Node):
 
         # Turn Around
         if self.is_near_boundary(robot_x) and self.just_turned == False:
+            self.total_turn_increment += self.turn_increment
             self.just_turned = True
             target_msg = Pose2D()
             target_msg.x = robot_x
-            target_msg.y = robot_y + self.turn_increment
+            target_msg.y = self.total_turn_increment
             target_msg.theta = float(np.pi)/2
             self.task_publisher.publish(target_msg)
         else:
