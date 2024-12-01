@@ -20,6 +20,7 @@ class RobotPlanner(Node):
         self.turn_increment = 0.2
         self.just_turned = False
         self.total_turn_increment = 0.0
+        self.checkpoint = None
     
     def is_near_boundary(self, val):
         lower_bound, upper_bound = self.boundary
@@ -43,6 +44,16 @@ class RobotPlanner(Node):
             target_msg.theta = float('nan')
             self.task_publisher.publish(target_msg)
             return
+        
+        # Lost
+        if math.isnan(robot_x) or math.isnan(robot_y) or math.isnan(robot_theta):
+            target_msg = Pose2D()
+            target_msg.x = self.checkpoint[0]
+            target_msg.y = self.checkpoint[1]
+            target_msg.theta = self.checkpoint[2]
+            self.task_publisher.publish(target_msg)
+            self.just_turned = True
+            return
 
         # Turn Around
         if self.is_near_boundary(robot_x) and self.just_turned == False:
@@ -53,6 +64,7 @@ class RobotPlanner(Node):
             target_msg.y = self.total_turn_increment
             target_msg.theta = float(np.pi)/2
             self.task_publisher.publish(target_msg)
+            self.checkpoint = np.array([target_msg.x, target_msg.y, target_msg.theta])
         else:
             # Move forward
             self.just_turned = False
@@ -61,6 +73,7 @@ class RobotPlanner(Node):
             target_msg.y = self.total_turn_increment
             target_msg.theta = 0.0 if robot_x < 0.5 else float(np.pi)
             self.task_publisher.publish(target_msg)
+            #self.checkpoint = np.array([target_msg.x, target_msg.y, target_msg.theta])
 
 def main(args=None):
     rclpy.init(args=args)

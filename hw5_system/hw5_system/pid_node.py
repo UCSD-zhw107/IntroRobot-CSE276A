@@ -107,8 +107,17 @@ class PIDcontroller(Node):
         # No Observation
         if math.isnan(msg.x) or math.isnan(msg.y) or math.isnan(msg.theta):
             return
+        estimate_state = np.array([msg.x, msg.y, msg.theta])
         try:
             self.lock.acquire()
+            # Lost
+            if np.linalg.norm(self.getError(self.current_state, estimate_state)) > 0.5:
+                print('Yes')
+                pose = Pose2D()
+                pose.x = float('nan')
+                pose.y = float('nan')
+                pose.theta = float('nan')
+                self.pose_pub.publish(pose)
             self.current_state = np.array([msg.x, msg.y, msg.theta])
         finally:
             self.lock.release()
@@ -126,7 +135,7 @@ class PIDcontroller(Node):
             self.publisher.publish(twist)
             raise SystemExit
         self.setTarget([msg.x, msg.y, msg.theta])
-        print(self.target)
+        #print(self.target)
     
     def timer_callback(self):
         try:
@@ -150,7 +159,7 @@ class PIDcontroller(Node):
             pose.y = current_state_copy[1]
             pose.theta = current_state_copy[2]
             self.pose_pub.publish(pose)
-            print(f'POSE: {current_state_copy}')
+            #print(f'POSE: {current_state_copy}')
             np.save('trajct.npy', np.asanyarray(self.trajectory))
         # Keep current task
         else:
