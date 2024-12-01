@@ -9,7 +9,7 @@ from math import copysign, fabs, sqrt, pi, sin, cos, asin, acos, atan2, exp, log
 class RobotPlanner(Node):
     def __init__(self):
         super().__init__('robot_planner')
-        self.radius = 0.5
+        self.radius = 0.4
         self.boundary = np.array([-0.9, 1.7])
         self.subscription = self.create_subscription(
             Pose2D,
@@ -58,7 +58,7 @@ class RobotPlanner(Node):
             self.just_turned = False
             target_msg = Pose2D()
             target_msg.x = upper_bound-self.radius if robot_x < 0.5 else lower_bound + self.radius
-            target_msg.y = robot_y
+            target_msg.y = self.total_turn_increment
             target_msg.theta = 0.0 if robot_x < 0.5 else float(np.pi)
             self.task_publisher.publish(target_msg)
 
